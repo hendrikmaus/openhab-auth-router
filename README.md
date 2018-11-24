@@ -78,7 +78,7 @@ Now point your nginx to the router instead of the OpenHAB instance:
         proxy_set_header X-Forwarded-Proto      $scheme;
 
         ## Authentication; leave this out for the first test
-        # proxy_set_header X-Forwarded-Username   $user;
+        # proxy_set_header X-Forwarded-Username   $remote_user;
         # auth_basic                              "Username and Password Required";
         # auth_basic_user_file                    /etc/nginx/.htpasswd;
     }
