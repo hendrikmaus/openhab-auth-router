@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/sanity-io/litter"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -44,6 +45,7 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		litter.Dump(r.Header)
 		proxy.ServeHTTP(w, r)
 	})
 
