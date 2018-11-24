@@ -24,7 +24,7 @@ hendrikmaus/openhab-auth-router:${TAG}
 ### Vanilla Binary
 
 ```sh
-./openhab-auth-router -host="127.0.0.1" -port="8080" -target="http://openhab:8080"
+./openhab-auth-router -host="127.0.0.1" -port="9090" -target="http://openhab:8080"
 ```
 
 Now point your browser to [localhost:8080](http://localhost:8080).
