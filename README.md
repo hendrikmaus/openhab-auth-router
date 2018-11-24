@@ -27,7 +27,7 @@ hendrikmaus/openhab-auth-router:${TAG}
 ./openhab-auth-router -host="127.0.0.1" -port="9090" -target="http://openhab:8080"
 ```
 
-Now point your browser to [localhost:8080](http://localhost:8080).
+Now point your browser to [localhost:9090](http://localhost:9090).
 
 ## Setup
 
