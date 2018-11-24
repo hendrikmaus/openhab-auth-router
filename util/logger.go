@@ -11,7 +11,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/hendrikmaus/openhab-auth-router/util"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -226,32 +225,32 @@ func (f *LogFormatter) formatForHumansNoColor(entry *logrus.Entry) ([]byte, erro
 
 // ConfigureLogger is called from the flag parser in order to pass log level and type on
 func ConfigureLogger(logLevel *string, logType *string) error {
-	formatter := &util.LogFormatter{}
+	formatter := &LogFormatter{}
 
 	switch strings.ToLower(*logType) {
 	case "human":
-		formatter.LogAsType = util.LogTypeHuman
+		formatter.LogAsType = LogTypeHuman
 	case "human-color":
-		formatter.LogAsType = util.LogTypeHumanNoColor
+		formatter.LogAsType = LogTypeHumanNoColor
 	case "machine":
-		formatter.LogAsType = util.LogTypeMachine
+		formatter.LogAsType = LogTypeMachine
 	case "machine+color":
-		formatter.LogAsType = util.LogTypeMachineColor
+		formatter.LogAsType = LogTypeMachineColor
 	default:
-		formatter.LogAsType = util.LogTypeAuto
+		formatter.LogAsType = LogTypeAuto
 	}
 
-	log.SetFormatter(formatter)
+	logrus.SetFormatter(formatter)
 
 	switch strings.ToLower(*logLevel) {
 	case "error":
-		log.SetLevel(log.ErrorLevel)
+		logrus.SetLevel(logrus.ErrorLevel)
 	case "warn":
-		log.SetLevel(log.WarnLevel)
+		logrus.SetLevel(logrus.WarnLevel)
 	case "info":
-		log.SetLevel(log.InfoLevel)
+		logrus.SetLevel(logrus.InfoLevel)
 	case "debug":
-		log.SetLevel(log.DebugLevel)
+		logrus.SetLevel(logrus.DebugLevel)
 	default:
 		return errors.New("Unknown loglevel")
 	}
