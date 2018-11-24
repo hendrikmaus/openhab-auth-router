@@ -33,15 +33,21 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 	})
 	mux.HandleFunc("/readiness", func(w http.ResponseWriter, r *http.Request) {
+		resp, err := http.Get(remote.String() + "/rest/")
+		if err != nil || resp.StatusCode != http.StatusOK {
+			log.Errorf("Readiness probe failed while trying to access '%s/rest/'", remote.String())
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+
+		log.Debug("Readiness probe successful")
 		w.WriteHeader(http.StatusOK)
-		// TODO: check if target can be reached
 	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		proxy.ServeHTTP(w, r)
 	})
 
 	addr := *host + ":" + *port
-
 	log.Infof("Serving at %s", addr)
 	if err := http.ListenAndServe(addr, mux); err != nil {
 		log.Error(err)
