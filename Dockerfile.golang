@@ -1,6 +1,7 @@
-ARG GO_COMMIT
-
 FROM alpine:3.8
+
+ARG GO_COMMIT
+ENV GO_COMMIT $GO_COMMIT
 
 RUN apk add --no-cache \
 		ca-certificates
