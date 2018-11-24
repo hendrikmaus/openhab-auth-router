@@ -1,6 +1,6 @@
 ARG GO_COMMIT
 
-FROM golang:$GO_COMMIT as builder
+FROM hendrikmaus/golang:$GO_COMMIT as builder
 
 RUN apk update && \
     apk add make

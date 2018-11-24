@@ -106,6 +106,8 @@ newer until golang 1.12 is released.
 To solve this issue, the project provides the means to build the required
 golang version in a docker container:
 
+> Actually, I provide that very commit with `hendrikmaus/golang` on dockerhub
+
 ```sh
 make builder-golang
 ```

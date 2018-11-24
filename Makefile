@@ -30,7 +30,7 @@ build: ## Build binary for the current platform
 .PHONY: build
 
 build-golang: ## Build base image to compile the app
-	docker build -t golang:$(GO_COMMIT) --build-arg GO_COMMIT=$(GO_COMMIT) -f Dockerfile.golang .
+	docker build -t hendrikmaus/golang:$(GO_COMMIT) --build-arg GO_COMMIT=$(GO_COMMIT) -f Dockerfile.golang .
 .PHONY: build-golang
 
 ##@ Packaging
