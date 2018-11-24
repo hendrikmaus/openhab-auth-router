@@ -1,0 +1,3 @@
+/openhab-auth-router
+/dist/**
+!/dist/.gitkeep
