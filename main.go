@@ -7,7 +7,8 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/sanity-io/litter"
+	"github.com/hendrikmaus/openhab-auth-router/util"
+	_ "github.com/sanity-io/litter"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -15,12 +16,15 @@ func main() {
 	host := flag.String("host", "127.0.0.1", "Host to listen on")
 	port := flag.String("port", "80", "Port to listen on")
 	target := flag.String("target", "", "Address of your OpenHAB instance, e.g. 'http://openhab:8080'")
+	logLevel := flag.String("log-level", "info", "Loglevel as in [error|warn|info|debug]")
+	logType := flag.String("log-type", "auto", "Set the type of logging [human|human-color|machine|machine+color|auto]")
 	flag.Parse()
 
 	if len(*target) == 0 {
 		log.Error("Please set '-target' to the address of your OpenHAB instance, e.g. 'http://openhab:8080'")
 		os.Exit(1)
 	}
+	util.ConfigureLogger(logLevel, logType)
 
 	remote, err := url.Parse(*target)
 	if err != nil {
@@ -45,7 +49,7 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		litter.Dump(r.Header)
+		log.Debug("Ingress")
 		proxy.ServeHTTP(w, r)
 	})
 
