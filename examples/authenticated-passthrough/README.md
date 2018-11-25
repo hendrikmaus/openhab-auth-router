@@ -1,7 +1,9 @@
 # Authenticated Passthrough Example
 
-Add openhab-auth-router as passthrough proxy between nginx and openhab
+Add openhab-auth-router as auth proxy between nginx and openhab
 with basic authentication in place.
+
+Use either `admin` or `demo` user and try the router in action.
 
 ## Required Tools
 
@@ -11,14 +13,22 @@ with basic authentication in place.
 ## Services
 
 This example runs a simple nginx, openhab in demo mode and open-auth-router
-with basic authentication enabled. Other than that, the router runs as passthrough.
+with basic authentication enabled.
 
-With this example you should be able to use the OpenHAB demo application through
-the proxy without any errors.
+The [config](./config.yaml), configures two users with different access to openhab.
 
-All services expose ports to offer maximum testing flexibility.
+- `admin`
+  - access to everything
+- `demo`
+  - entrypoint is basic ui
+  - `/start/index` is disallowed
 
 ## Authentication
+
+Use the admin credentials:
+
+- username: `admin`
+- password: `admin`
 
 Use the demo credentials:
 
@@ -33,18 +43,25 @@ docker-compose up -d
 
 ## Access OpenHAB
 
-### Thorugh Auth-Router
+### Through Auth-Router
 
 ```sh
 openhab http://localhost
 ```
 
 - Go to OpenHAB in your browser
+  - Login as `admin`
+    - The `demo` user would not be allowed to access the start
+      to setup the OpenHAB instance
   - Open the network console in the dev tools to inspect traffic
 - Click on Demo mode
 - Browse OpenHAB
   - Monitor network panel to see if there are any hidden issues
-- You may also want to access the rest api
+- Now login as `demo` user
+  - Enter `http://demo:demo@localhost` to bust your admin session
+- You should be redirected to `/basicui/app` and see the demo sitemap
+  - Try to go to `http://localhost/start/index`
+    and you should land in basic ui again
 
 ### Directly, Without Auth-Router
 
