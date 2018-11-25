@@ -1,6 +1,6 @@
 # Authenticated Passthrough Example
 
-Add openhab-auth-router as auth proxy between nginx and openhab
+Add openhab-auth-router as auth proxy between nginx and openHAB
 with basic authentication in place.
 
 Use either `admin` or `demo` user and try the router in action.
@@ -12,13 +12,14 @@ Use either `admin` or `demo` user and try the router in action.
 
 ## Services
 
-This example runs a simple nginx, openhab in demo mode and open-auth-router
+This example runs a simple nginx, openHAB and open-auth-router
 with basic authentication enabled.
 
-The [config](./config.yaml), configures two users with different access to openhab.
+The [config](./config.yaml), configures two users with different access to openHAB.
 
 - `admin`
   - access to everything
+  - start with this user to kick off openHAB demo mode
 - `demo`
   - entrypoint is basic ui
   - `/start/index` is disallowed
@@ -45,23 +46,24 @@ docker-compose up -d
 
 ### Through Auth-Router
 
-```sh
-openhab http://localhost
-```
-
-- Go to OpenHAB in your browser
+- Go to openHAB in your browser, private window
   - Login as `admin`
     - The `demo` user would not be allowed to access the start
-      to setup the OpenHAB instance
+      to setup the openHAB instance
   - Open the network console in the dev tools to inspect traffic
 - Click on Demo mode
-- Browse OpenHAB
+- Browse openHAB
   - Monitor network panel to see if there are any hidden issues
 - Now login as `demo` user
+  - Open a new private window or
   - Enter `http://demo:demo@localhost` to bust your admin session
+    - does not work reliably for some
 - You should be redirected to `/basicui/app` and see the demo sitemap
   - Try to go to `http://localhost/start/index`
     and you should land in basic ui again
+  - Try to access other sitemaps as well
+    - `widgetoverview` should work
+    - `admin` not
 
 ### Directly, Without Auth-Router
 

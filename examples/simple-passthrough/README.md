@@ -1,6 +1,6 @@
 # Simple Passthrough Example
 
-Add openhab-auth-router as passthrough proxy between nginx and openhab.
+Add openhab-auth-router as passthrough proxy between nginx and openHAB.
 
 ## Required Tools
 
@@ -9,10 +9,10 @@ Add openhab-auth-router as passthrough proxy between nginx and openhab.
 
 ## Services
 
-This example runs a simple nginx, openhab in demo mode and open-auth-router
+This example runs a simple nginx, openHAB in demo mode and open-auth-router
 without any restrictions - a pure [passthrough](./config.yaml).
 
-With this example you should be able to use the OpenHAB demo application through
+With this example you should be able to use the openHAB demo application through
 the proxy without any errors.
 
 All services expose ports to offer maximum testing flexibility.
@@ -27,14 +27,10 @@ docker-compose up -d
 
 ### Through Auth-Router
 
-```sh
-openhab http://localhost
-```
-
-- Go to OpenHAB in your browser
+- Go to openHAB in your browser
   - Open the network console in the dev tools to inspect traffic
 - Click on Demo mode
-- Browse OpenHAB
+- Browse openHAB
   - Monitor network panel to see if there are any hidden issues
 - You may also want to access the rest api
 

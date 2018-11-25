@@ -6,7 +6,7 @@ A quick solution to control sitemap access by authenticated users.
 
 ## Use Case
 
-- You run one or more OpenHAB instances
+- You run one or more openHAB instances
 - The instances are accessed through nginx
 - Nginx is used to provide basic authentication
 - You want to restrict user access to sitemaps
@@ -39,7 +39,10 @@ Using the actual routing features:
       Path the user should be routed when trying to access `/`
     - `sitemaps`
       - `default`
-        Define the default sitemap to be used
+        Define the default sitemap to be used.
+        This value is used when no sitemap param can be found and
+        when a user tries to access a denied sitemap.
+        It does not override the basicui service config default.
       - `allowed`
         List of sitemaps with allowed access.
         Special value `"*"` allows access to every sitemap
@@ -47,7 +50,7 @@ Using the actual routing features:
       - `<name>`
         This is the path to configure
         - `allowed`
-           `true` or `false` define whether the path is accessible or not
+           `true` or `false` define whether the path is accessible or not.
            The value is used in a prefix check. The order of the rules
            matters as the first partial match wins.
 
@@ -78,7 +81,8 @@ The admin user is allowed to access every path, and sitemap. The entrypoint
 is set to the default path of an openHAB installation, the dashboard.
 
 The demo user is routed to basicui by default, is only allowed
-to access the demo sitemap and may not access the dashboard.
+to access the demo and widgetoverview sitemaps and may not access the dashboard,
+paperui, docs or habpanel.
 
 If this user tries to access other sitemaps or restricted paths, the router
 redirects to the entrypoint.
@@ -100,7 +104,7 @@ docker run --rm \
 ```
 
 Now point your browser to port 9090 on the machine the container runs on.
-You should be able to access your OpenHAB as usual.
+You should be able to access your openHAB as usual.
 
 > If you encounter issues, please open an issue on Github.
 
@@ -112,7 +116,7 @@ echo "passthrough: true" > ./config.yaml
 ```
 
 Now point your browser to port 9090 on the machine the binary runs on.
-You should be able to access your OpenHAB as usual.
+You should be able to access your openHAB as usual.
 
 > If you encounter issues, please open an issue on Github.
 
@@ -306,7 +310,7 @@ curl -v host:port/readiness
   - determine readiness for traffic
   - determine healthy connection to target system
 
-Now point your nginx to the router instead of the OpenHAB instance:
+Now point your nginx to the router instead of the openHAB instance:
 
 ```txt
     location / {
@@ -327,7 +331,7 @@ Now point your nginx to the router instead of the OpenHAB instance:
     }
 ```
 
-Restart nginx `sudo service nginx reload` and try to access your OpenHAB instance as usual.
+Restart nginx `sudo service nginx reload` and try to access your openHAB instance as usual.
 
 ## Development And Contribution
 
@@ -337,7 +341,7 @@ The Makefile is self-documenting, simply run `make` to see the help.
 
 ### Specific Golang Version Required
 
-Since OpenHAB's BasicUI uses WebSockets, we need a feature of golang
+Since openHAB's BasicUI uses WebSockets, we need a feature of golang
 which is unreleased right now (2018-11-24), but the [feature][1] is already merged
 into golang master.
 
