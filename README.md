@@ -138,6 +138,86 @@ Then run `sudo systemctl enable openhab-auth-router.service`.
 
 Finally run `sudo systemctl start openhab-auth-router.service` to start the router running.
 
+### Kubernetes
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openhab-auth-router-config
+  namespace: openhab
+  labels:
+    app: openhab-auth-router
+data:
+  config.yaml: |-
+    passthrough: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openhab-auth-router
+  namespace: openhab
+  labels:
+    app: openhab-auth-router
+spec:
+  selector:
+    app: openhab-auth-router
+  ports:
+  - name: http-proxy
+    port: 8080
+    targetPort: http-proxy
+    protocol: HTTP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openhab-auth-router
+  namespace: openhab
+spec:
+  selector:
+    matchLabels:
+      app: openhab-auth-router
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: openhab-auth-router
+    spec:
+      containers:
+      - name: openhab-auth-router
+        image: hendrikmaus/openhab-auth-router:latest
+        command:
+          - openhab-auth-router
+          - -host="0.0.0.0"
+          - -port="8080"
+          - -target="http://openhab.default.svc.cluster.local"
+          - -config="/usr/share/config.yaml"
+          - -log-level="debug"
+          - -log-type="human"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /usr/share/
+        ports:
+        - name: http-proxy
+          containerPort: 8080
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: 8080
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /liveness
+            port: 8080
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+      volumes:
+      - name: config-volume
+        configMap:
+          name: openhab-auth-router-config
+```
+
 Asserting the health of the router and connection to the target:
 
 ```sh
