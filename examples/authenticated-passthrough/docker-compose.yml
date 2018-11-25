@@ -9,7 +9,7 @@ services:
     - ./.htpasswd:/etc/nginx/.htpasswd
   openhab-auth-router:
     image: hendrikmaus/openhab-auth-router:local
-    command: 'openhab-auth-router -host="0.0.0.0" -port="80" -target="http://openhab" -config="/usr/share/config.yaml" -log-level="debug" -log-type="human"'
+    command: 'openhab-auth-router -host="0.0.0.0" -port="80" -target="http://openhab" -config="/usr/share/config.yaml" -log-level="debug"'
     ports:
     - 9090:80
     volumes:
@@ -18,6 +18,8 @@ services:
     image: "openhab/openhab:2.3.0-amd64-debian"
     restart: always
     command: "./start_debug.sh"
+    volumes: 
+    - ./openhab-conf/sitemaps:/openhab/conf/sitemaps
     tty: true
     environment:
       OPENHAB_HTTP_PORT: "80"

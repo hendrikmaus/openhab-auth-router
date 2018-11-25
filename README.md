@@ -62,7 +62,7 @@ users:
   admin:
     entrypoint: "/start/index"
     sitemaps:
-      default: demo
+      default: admin
       allowed:
       - "*"
   demo:
@@ -71,8 +71,12 @@ users:
       default: demo
       allowed:
       - demo
+      - widgetoverview
     paths:
       "/start/index": { allowed: false }
+      "/paperui"    : { allowed: false }
+      "/doc"        : { allowed: false }
+      "/habpanel"   : { allowed: false }
 ```
 
 This config disbales passthrough, so the defined user rules take effect.
