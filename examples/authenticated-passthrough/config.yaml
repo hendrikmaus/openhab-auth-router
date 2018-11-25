@@ -1,0 +1,16 @@
+passthrough: false
+users:
+  admin:
+    entrypoint: "/start/index"
+    sitemaps:
+      default: demo
+      allowed:
+      - "*"
+  demo:
+    entrypoint: "/basicui/app"
+    sitemaps:
+      default: demo
+      allowed:
+      - demo
+    paths:
+      "/start/index": { allowed: false }

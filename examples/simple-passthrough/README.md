@@ -10,7 +10,7 @@ Add openhab-auth-router as passthrough proxy between nginx and openhab.
 ## Services
 
 This example runs a simple nginx, openhab in demo mode and open-auth-router
-without any restrictions - a pure passthrough.
+without any restrictions - a pure [passthrough](./config.yaml).
 
 With this example you should be able to use the OpenHAB demo application through
 the proxy without any errors.
@@ -25,7 +25,7 @@ docker-compose up -d
 
 ## Access OpenHAB
 
-### Thorugh Auth-Router
+### Through Auth-Router
 
 ```sh
 openhab http://localhost
