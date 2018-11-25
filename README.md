@@ -273,7 +273,6 @@ spec:
           - -target="http://openhab.default.svc.cluster.local"
           - -config="/usr/share/config.yaml"
           - -log-level="debug"
-          - -log-type="human"
         volumeMounts:
         - name: config-volume
           mountPath: /usr/share/
