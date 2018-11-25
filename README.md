@@ -11,6 +11,10 @@ A quick solution to control sitemap access by authenticated users.
 - Nginx is used to provide basic authentication
 - You want to restrict user access to sitemaps
 
+> Nginx is not a hard-requirement; any other service capable of your desired
+> authentication and setting a heder called `X-Forwarded-Username` to the authenticated
+> username will work fine
+
 ## Usage
 
 > You might like to look at some of the [examples](./examples) to get started as well.
@@ -20,16 +24,33 @@ A quick solution to control sitemap access by authenticated users.
 The recommended way to run the router is using the official Docker image:
 
 ```sh
-hendrikmaus/openhab-auth-router:${TAG}
+echo "passthrough: true" > ./config.yaml
+docker run --rm \
+  -v "$(pwd)/config.yaml:/usr/share/config.yaml" \
+  -p 9090:9090 \
+  hendrikmaus/openhab-auth-router:${TAG} \
+    -host="0.0.0.0" \
+    -port="9090" \
+    -target="http://openhab:8080" \
+    -config="/usr/share/config.yaml"
 ```
+
+Now point your browser to port 9090 on the machine the container runs on.
+You should be able to access your OpenHAB as usual.
+
+> If you encounter issues, please open an issue on Github.
 
 ### Vanilla Binary
 
 ```sh
-./openhab-auth-router -host="127.0.0.1" -port="9090" -target="http://openhab:8080"
+echo "passthrough: true" > ./config.yaml
+./openhab-auth-router -host="127.0.0.1" -port="9090" -target="http://openhab:8080" -config="./config.yaml"
 ```
 
-Now point your browser to [localhost:9090](http://localhost:9090).
+Now point your browser to port 9090 on the machine the binary runs on.
+You should be able to access your OpenHAB as usual.
+
+> If you encounter issues, please open an issue on Github.
 
 ## Setup
 
@@ -43,11 +64,79 @@ for your platform from [github](https://github.com/hendrikmaus/openhab-auth-rout
 Depending on your OS, create a service that runs and maintains the router
 process.
 
-E.g. systemd:
-TODO: TBD
+### Binary Via Systemd
 
-E.g. managed by docker:
-TODO: TBD
+The config file is expected to live at `/usr/share/openhab-auth-router/config.yaml`.
+
+```txt
+[Unit]
+Description=openhab-auth-router
+
+[Service]
+Restart=always
+ExecStart=/usr/bin/openhab-auth-router \
+    -host="0.0.0.0" \
+    -port="9090" \
+    -target="http://openhab:8080" \
+    -config="/usr/share/openhab-auth-router/config.yaml"
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Place this `openhab-auth-router.service` file into `/etc/systemd/system`.
+
+Then run `sudo systemctl enable openhab-auth-router.service`.
+
+Finally run `sudo systemctl start openhab-auth-router.service` to start the router running.
+
+### Managed by Docker
+
+```sh
+echo "passthrough: true" > ./config.yaml
+docker run --restart always --name openhab-auth-router \
+  -v "$(pwd)/config.yaml:/usr/share/config.yaml" \
+  -p 9090:9090 \
+  hendrikmaus/openhab-auth-router:${TAG} \
+    -host="0.0.0.0" \
+    -port="9090" \
+    -target="http://openhab:8080" \
+    -config="/usr/share/config.yaml"
+```
+
+### Docker Managed by Systemd
+
+Ensure to replace `${TAG}` with the version you want to run.
+
+The config file is expected to live at `/usr/share/openhab-auth-router/config.yaml`.
+
+```txt
+[Unit]
+Description=openhab-auth-router
+Requires=docker.service
+After=docker.service
+
+[Service]
+Restart=always
+ExecStart=/usr/bin/docker run --name=%n \
+  -v /usr/share/openhab-auth-router/config.yaml:/usr/share/config.yaml \
+  -p 9090:9090 \
+  hendrikmaus/openhab-auth-router:${TAG} \
+    -host="0.0.0.0" \
+    -port="9090" \
+    -target="http://openhab:8080" \
+    -config="/usr/share/config.yaml"
+ExecStop=/usr/bin/docker stop -t 2 %n ; /usr/bin/docker rm -f %n
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Place this `openhab-auth-router.service` file into `/etc/systemd/system`.
+
+Then run `sudo systemctl enable openhab-auth-router.service`.
+
+Finally run `sudo systemctl start openhab-auth-router.service` to start the router running.
 
 Asserting the health of the router and connection to the target:
 
@@ -85,8 +174,6 @@ Now point your nginx to the router instead of the OpenHAB instance:
         # auth_basic_user_file                    /etc/nginx/.htpasswd;
     }
 ```
-
-TODO: update with basic auth and header set for router
 
 Restart nginx `sudo service nginx reload` and try to access your OpenHAB instance as usual.
 
