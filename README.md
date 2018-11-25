@@ -19,6 +19,70 @@ A quick solution to control sitemap access by authenticated users.
 
 > You might like to look at some of the [examples](./examples) to get started as well.
 
+### Config
+
+The router requires a configuration file in YAML format.
+
+The minimal config to run the router as pure passthrough:
+
+```yaml
+passthrough: true
+```
+
+> This is useful for testing as well.
+
+Using the actual routing features:
+
+- `users`
+  - `<name>`
+    - `entrypoint`
+      Path the user should be routed when trying to access `/`
+    - `sitemaps`
+      - `default`
+        Define the default sitemap to be used
+      - `allowed`
+        List of sitemaps with allowed access.
+        Special value `"*"` allows access to every sitemap
+    - `paths`
+      - `<name>`
+        This is the path to configure
+        - `allowed`
+           `true` or `false` define whether the path is accessible or not
+           The value is used in a prefix check. The order of the rules
+           matters as the first partial match wins.
+
+Example:
+
+```yaml
+passthrough: false
+users:
+  admin:
+    entrypoint: "/start/index"
+    sitemaps:
+      default: demo
+      allowed:
+      - "*"
+  demo:
+    entrypoint: "/basicui/app"
+    sitemaps:
+      default: demo
+      allowed:
+      - demo
+    paths:
+      "/start/index": { allowed: false }
+```
+
+This config disbales passthrough, so the defined user rules take effect.
+
+The admin user is allowed to access every path, and sitemap. The entrypoint
+is set to the default path of an openHAB installation, the dashboard.
+
+The demo user is routed to basicui by default, is only allowed
+to access the demo sitemap and may not access the dashboard.
+
+If this user tries to access other sitemaps or restricted paths, the router
+redirects to the entrypoint.
+
 ### Docker
 
 The recommended way to run the router is using the official Docker image:
@@ -68,6 +132,8 @@ process.
 
 The config file is expected to live at `/usr/share/openhab-auth-router/config.yaml`.
 
+> Config untested, see [#2](https://github.com/hendrikmaus/openhab-auth-router/issues/2)
+
 ```txt
 [Unit]
 Description=openhab-auth-router
@@ -92,6 +158,8 @@ Finally run `sudo systemctl start openhab-auth-router.service` to start the rout
 
 ### Managed by Docker
 
+> Config untested, see [#2](https://github.com/hendrikmaus/openhab-auth-router/issues/2)
+
 ```sh
 echo "passthrough: true" > ./config.yaml
 docker run --restart always --name openhab-auth-router \
@@ -109,6 +177,8 @@ docker run --restart always --name openhab-auth-router \
 Ensure to replace `${TAG}` with the version you want to run.
 
 The config file is expected to live at `/usr/share/openhab-auth-router/config.yaml`.
+
+> Config untested, see [#2](https://github.com/hendrikmaus/openhab-auth-router/issues/2)
 
 ```txt
 [Unit]
@@ -139,6 +209,8 @@ Then run `sudo systemctl enable openhab-auth-router.service`.
 Finally run `sudo systemctl start openhab-auth-router.service` to start the router running.
 
 ### Kubernetes
+
+> Config untested, see [#2](https://github.com/hendrikmaus/openhab-auth-router/issues/2)
 
 ```yaml
 apiVersion: v1
