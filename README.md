@@ -1,5 +1,7 @@
 # OpenHAB Auth Router
 
+[![CircleCI](https://circleci.com/gh/hendrikmaus/openhab-auth-router/tree/master.svg?style=svg)](https://circleci.com/gh/hendrikmaus/openhab-auth-router/tree/master)
+
 A quick solution to control sitemap access by authenticated users.
 
 ## Use Case
