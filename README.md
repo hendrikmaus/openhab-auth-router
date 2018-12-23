@@ -15,6 +15,16 @@ A quick solution to control sitemap access by authenticated users.
 > authentication and setting a heder called `X-Forwarded-Username` to the authenticated
 > username will work fine
 
+## Install
+
+If a working golang setup is available, run:
+
+```sh
+go get github.com/hendrikmaus/openhab-auth-router
+```
+
+Otherwise, download the binary for your platform from the [github releases](https://github.com/hendrikmaus/openhab-auth-router/releases) and put it into your PATH.
+
 ## Usage
 
 > You might like to look at some of the [examples](./examples) to get started as well.
@@ -116,7 +126,7 @@ You should be able to access your openHAB as usual.
 
 ```sh
 echo "passthrough: true" > ./config.yaml
-./openhab-auth-router -host="127.0.0.1" -port="9090" -target="http://openhab:8080" -config="./config.yaml"
+openhab-auth-router -host="127.0.0.1" -port="9090" -target="http://openhab:8080" -config="./config.yaml"
 ```
 
 Now point your browser to port 9090 on the machine the binary runs on.
@@ -140,8 +150,6 @@ process.
 
 The config file is expected to live at `/usr/share/openhab-auth-router/config.yaml`.
 
-> Config untested, see [#2](https://github.com/hendrikmaus/openhab-auth-router/issues/2)
-
 ```txt
 [Unit]
 Description=openhab-auth-router
@@ -164,9 +172,15 @@ Then run `sudo systemctl enable openhab-auth-router.service`.
 
 Finally run `sudo systemctl start openhab-auth-router.service` to start the router running.
 
-### Managed by Docker
+To clean up, run:
 
-> Config untested, see [#2](https://github.com/hendrikmaus/openhab-auth-router/issues/2)
+```sh
+sudo systemctl stop openhab-auth-router.service
+sudo systemctl disable openhab-auth-router.service
+sudo rm -f /etc/systemd/system/openhab-auth-router.service
+```
+
+### Managed by Docker
 
 ```sh
 echo "passthrough: true" > ./config.yaml
@@ -174,6 +188,7 @@ docker run --restart always --name openhab-auth-router \
   -v "$(pwd)/config.yaml:/usr/share/config.yaml" \
   -p 9090:9090 \
   hendrikmaus/openhab-auth-router:${TAG} \
+    openhab-auth-router \
     -host="0.0.0.0" \
     -port="9090" \
     -target="http://openhab:8080" \
@@ -185,8 +200,6 @@ docker run --restart always --name openhab-auth-router \
 Ensure to replace `${TAG}` with the version you want to run.
 
 The config file is expected to live at `/usr/share/openhab-auth-router/config.yaml`.
-
-> Config untested, see [#2](https://github.com/hendrikmaus/openhab-auth-router/issues/2)
 
 ```txt
 [Unit]
@@ -200,6 +213,7 @@ ExecStart=/usr/bin/docker run --name=%n \
   -v /usr/share/openhab-auth-router/config.yaml:/usr/share/config.yaml \
   -p 9090:9090 \
   hendrikmaus/openhab-auth-router:${TAG} \
+    openhab-auth-router \
     -host="0.0.0.0" \
     -port="9090" \
     -target="http://openhab:8080" \
@@ -216,9 +230,16 @@ Then run `sudo systemctl enable openhab-auth-router.service`.
 
 Finally run `sudo systemctl start openhab-auth-router.service` to start the router running.
 
-### Kubernetes
 
-> Config untested, see [#2](https://github.com/hendrikmaus/openhab-auth-router/issues/2)
+To clean up, run:
+
+```sh
+sudo systemctl stop openhab-auth-router.service
+sudo systemctl disable openhab-auth-router.service
+sudo rm -f /etc/systemd/system/openhab-auth-router.service
+```
+
+### Kubernetes
 
 ```yaml
 apiVersion: v1
@@ -243,10 +264,10 @@ spec:
   selector:
     app: openhab-auth-router
   ports:
-  - name: http-proxy
-    port: 8080
-    targetPort: http-proxy
-    protocol: HTTP
+    - name: http-proxy
+      port: 8080
+      targetPort: http-proxy
+      protocol: HTTP
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -257,44 +278,59 @@ spec:
   selector:
     matchLabels:
       app: openhab-auth-router
-  replicas: 1
   template:
     metadata:
       labels:
         app: openhab-auth-router
     spec:
-      containers:
-      - name: openhab-auth-router
-        image: hendrikmaus/openhab-auth-router:latest
-        command:
-          - openhab-auth-router
-          - -host="0.0.0.0"
-          - -port="8080"
-          - -target="http://openhab.default.svc.cluster.local"
-          - -config="/usr/share/config.yaml"
-          - -log-level="debug"
-        volumeMounts:
-        - name: config-volume
-          mountPath: /usr/share/
-        ports:
-        - name: http-proxy
-          containerPort: 8080
-        readinessProbe:
-          httpGet:
-            path: /readiness
-            port: 8080
-          initialDelaySeconds: 5
-          timeoutSeconds: 5
-        livenessProbe:
-          httpGet:
-            path: /liveness
-            port: 8080
-          initialDelaySeconds: 5
-          timeoutSeconds: 5
       volumes:
-      - name: config-volume
-        configMap:
-          name: openhab-auth-router-config
+        - name: openhab-auth-router-config
+          configMap:
+            name: openhab-auth-router-config
+      containers:
+        - name: openhab-auth-router
+          image: hendrikmaus/openhab-auth-router:0.0.1-alpha
+          command: ["openhab-auth-router"]
+          args:
+            - "-host"
+            - "0.0.0.0"
+            - "-port"
+            - "8080"
+            - "-target"
+            - "http://openhab:8080"
+            - "-config"
+            - "/usr/share/config.yaml"
+            - "-log-level"
+            - "info"
+          env:
+            - name: GOMAXPROCS
+              value: "1"
+          ports:
+            - name: http
+              containerPort: 8080
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "24Mi"
+            limits:
+              cpu: "250m"
+              memory: "48Mi"
+          volumeMounts:
+            - mountPath: /usr/share/
+              name: openhab-auth-router-config
+          readinessProbe:
+            httpGet:
+              path: /readiness
+              port: 8080
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /liveness
+              port: 8080
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+
 ```
 
 Asserting the health of the router and connection to the target:
