@@ -105,6 +105,8 @@ redirects to the entrypoint.
 
 The recommended way to run the router is using the official Docker image:
 
+> An image for ARM32v6 is also available.
+
 ```sh
 echo "passthrough: true" > ./config.yaml
 docker run --rm \
