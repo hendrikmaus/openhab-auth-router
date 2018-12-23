@@ -111,6 +111,7 @@ docker run --rm \
   -v "$(pwd)/config.yaml:/usr/share/config.yaml" \
   -p 9090:9090 \
   hendrikmaus/openhab-auth-router:${TAG} \
+    openhab-auth-router \
     -host="0.0.0.0" \
     -port="9090" \
     -target="http://openhab:8080" \
