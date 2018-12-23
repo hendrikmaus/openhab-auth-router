@@ -35,7 +35,7 @@ build-golang: ## Build base image to compile the app
 
 ##@ Packaging
 
-pkg-all: pkg-freebsd pkg-linux pkg-mac pkg-pi pkg-win pkg-docker ## Build all distribution files (docker imahe not pushed)
+pkg-all: pkg-freebsd pkg-linux pkg-mac pkg-arm32v6 pkg-win pkg-docker pkg-docker-arm32v6 ## Build all distribution files (docker imahe not pushed)
 
 pkg-freebsd: ## Build openhab-auth-router zip-file for FreeBSD (x64)
 	echo "\033[0;33mBuilding for FreeBSD/x64\033[0;0m"
@@ -55,11 +55,11 @@ pkg-mac: ## Build openhab-auth-router zip-file for MacOS X (x64)
 	zip dist/openhab-auth-router-$(IMAGE_TAG)-MacOS_x64.zip openhab-auth-router
 .PHONY: pkg-mac
 
-pkg-pi: ## Build openhab-auth-router zip-file for Raspberry Pi / Linux (ARMv6)
-	echo "\033[0;33mBuilding for Raspberry Pi (Linux/ARMv6)\033[0;0m"
+pkg-arm32v6: ## Build openhab-auth-router zip-file for Raspberry Pi / Linux (ARM32v6)
+	echo "\033[0;33mBuilding for Raspberry Pi (Linux/ARM32v6)\033[0;0m"
 	GOOS=linux GOARCH=arm GOARM=6 $(GO_ENV) $(GO_BIN) build $(GO_FLAGS)
 	zip dist/openhab-auth-router-$(IMAGE_TAG)-Linux_Arm6.zip openhab-auth-router
-.PHONY: pkg-pi
+.PHONY: pkg-arm32v6
 
 pkg-win: ## Build openhab-auth-router zip-file for Windows (x64)
 	echo "\033[0;33mBuilding for Windows/x64\033[0;0m"
@@ -73,8 +73,14 @@ pkg-docker: ## Build openhab-auth-router docker image
 	docker build --build-arg GO_COMMIT=$(GO_COMMIT) -t hendrikmaus/openhab-auth-router:$(IMAGE_TAG) .
 .PHONY: pkg-docker
 
-pkg-docker-push: ## Push openhab-auth-router docker image
+pkg-docker-arm32v6: ## Build openhab-auth-router docker image for arm32v6
+	echo "\033[0;33mBuilding docker image for arm32v6\033[0;0m"
+	docker build -f Dockerfile.arm32v6 --build-arg GO_COMMIT=$(GO_COMMIT) -t hendrikmaus/openhab-auth-router:$(IMAGE_TAG)-arm32v6 .
+.PHONY: pkg-docker-arm32v6
+
+pkg-docker-push: ## Push openhab-auth-router docker images
 	docker push hendrikmaus/openhab-auth-router:$(IMAGE_TAG)
+	docker push hendrikmaus/openhab-auth-router:$(IMAGE_TAG)-arm32v6
 .PHONY: pkg-docker-push
 
 ##@ Dependencies
@@ -95,4 +101,4 @@ clean: ## Clean working directory
 .PHONY: clean
 
 help:  ## Display this help
-	awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+	awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[0-9a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)

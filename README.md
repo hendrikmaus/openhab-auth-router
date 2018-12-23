@@ -416,7 +416,9 @@ IMAGE_TAG={version} make pkg-all
 
 Now the `./dist` folder is populated and the docker image is built locally.
 
-To push the docker image:
+To push the docker images:
+
+> The docker images can be built individually, run `make` to see the relevant targets.
 
 ```sh
 IMAGE_TAG={version} make pkg-docker-push
