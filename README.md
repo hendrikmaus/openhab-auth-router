@@ -375,6 +375,26 @@ Now point your nginx to the router instead of the openHAB instance:
 
 Restart nginx `sudo service nginx reload` and try to access your openHAB instance as usual.
 
+If you run Apache, this configuration was contributed by [sven](https://community.openhab.org/t/authorization-per-sitemap-via-reverse-proxy-and-custom-router/60848/7?u=milford) in the openhab community:
+
+```
+<VirtualHost *:80>
+	ProxyPass / http://ip_of_your_device:9090/
+	ProxyPassReverse / http://ip_of_your_device:9090/
+
+	<Location />
+		AuthType Basic
+		AuthName "OpenHab2 Restricted
+		AuthUserFile /etc/apache2/.htpasswd
+		Require valid-user
+		RequestHeader set X-Forwarded-Username expr=%{REMOTE_USER}
+	</Location>
+
+	ErrorLog ${APACHE_LOG_DIR}/error.log
+	CustomLog ${APACHE_LOG_DIR}/access.log combined
+</VirtualHost>
+```
+
 ## Development And Contribution
 
 ### Using The Makefile
