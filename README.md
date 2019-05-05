@@ -20,6 +20,7 @@ A quick solution to control sitemap access by authenticated users.
 If a working golang setup is available, run:
 
 ```sh
+# requires golang 1.12+
 go get github.com/hendrikmaus/openhab-auth-router
 ```
 
@@ -401,27 +402,7 @@ If you run Apache, this configuration was contributed by [sven](https://communit
 
 The Makefile is self-documenting, simply run `make` to see the help.
 
-### Specific Golang Version Required
-
-Since openHAB's BasicUI uses WebSockets, we need a feature of golang
-which is unreleased right now (2018-11-24), but the [feature][1] is already merged
-into golang master.
-
-Hence you need a golang version compiled at `ee55f0856a3f1fed5d8c15af54c40e4799c2d32f` or
-newer until golang 1.12 is released.
-
-To solve this issue, the project provides the means to build the required
-golang version in a docker container:
-
-> Actually, I provide that very commit with `hendrikmaus/golang` on dockerhub
-
-```sh
-make builder-golang
-```
-
-The commit defaults to the afforementioned, but can be overridden by setting `GO_COMMIT`.
-
-To build the docker image from the based golang image, run:
+To build the docker image, run:
 
 ```sh
 make pkg-docker
@@ -445,5 +426,3 @@ To push the docker images:
 ```sh
 IMAGE_TAG={version} make pkg-docker-push
 ```
-
-[1]:https://github.com/golang/go/commit/ee55f0856a3f1fed5d8c15af54c40e4799c2d32f

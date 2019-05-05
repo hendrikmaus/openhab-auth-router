@@ -14,10 +14,9 @@ ifndef VERBOSE
 endif
 
 IMAGE_TAG 	?= local
-GO_FLAGS 		= -tags netgo -ldflags "-X 'main.Version=$(IMAGE_TAG)'" -mod=vendor
-GO_ENV 			:= GO111MODULE="on"
+GO_FLAGS 	= -tags netgo -ldflags "-X 'main.Version=$(IMAGE_TAG)'" -mod=vendor
+GO_ENV 		:= GO111MODULE="on"
 GO_BIN      ?= go
-GO_COMMIT   ?= ee55f0856a3f1fed5d8c15af54c40e4799c2d32f
 
 ##@ Build
 
@@ -28,10 +27,6 @@ test: ## Run unit-tests
 build: ## Build binary for the current platform
 	$(GO_ENV) $(GO_BIN) build $(GO_FLAGS)
 .PHONY: build
-
-build-golang: ## Build base image to compile the app
-	docker build -t hendrikmaus/golang:$(GO_COMMIT) --build-arg GO_COMMIT=$(GO_COMMIT) -f Dockerfile.golang .
-.PHONY: build-golang
 
 ##@ Packaging
 
@@ -70,12 +65,12 @@ pkg-win: ## Build openhab-auth-router zip-file for Windows (x64)
 
 pkg-docker: ## Build openhab-auth-router docker image
 	echo "\033[0;33mBuilding docker image\033[0;0m"
-	docker build --build-arg GO_COMMIT=$(GO_COMMIT) -t hendrikmaus/openhab-auth-router:$(IMAGE_TAG) .
+	docker build -t hendrikmaus/openhab-auth-router:$(IMAGE_TAG) .
 .PHONY: pkg-docker
 
 pkg-docker-arm32v6: ## Build openhab-auth-router docker image for arm32v6
 	echo "\033[0;33mBuilding docker image for arm32v6\033[0;0m"
-	docker build -f Dockerfile.arm32v6 --build-arg GO_COMMIT=$(GO_COMMIT) -t hendrikmaus/openhab-auth-router:$(IMAGE_TAG)-arm32v6 .
+	docker build -f Dockerfile.arm32v6 -t hendrikmaus/openhab-auth-router:$(IMAGE_TAG)-arm32v6 .
 .PHONY: pkg-docker-arm32v6
 
 pkg-docker-push: ## Push openhab-auth-router docker images
