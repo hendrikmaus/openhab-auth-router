@@ -1,11 +1,8 @@
-FROM golang:1.12.4-alpine3.9 as builder
-
-RUN apk update && \
-    apk add make
+FROM golang:1.13.8 as builder
 
 COPY . /go/src/github.com/hendrikmaus/openhab-auth-router
 WORKDIR /go/src/github.com/hendrikmaus/openhab-auth-router
-RUN make build
+RUN go build -tags netgo -ldflags "-X 'main.Version=${IMAGE_TAG}'" -mod=vendor
 
 FROM alpine
 
