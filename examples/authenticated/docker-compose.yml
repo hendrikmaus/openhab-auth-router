@@ -1,28 +1,49 @@
 version: '3'
+
 services:
   nginx:
     image: nginx:latest
     ports:
-    - 80:80
+      - 80:80
+    restart: always
     volumes:
-    - ./nginx.conf:/etc/nginx/conf.d/default.conf
-    - ./.htpasswd:/etc/nginx/.htpasswd
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./.htpasswd:/etc/nginx/.htpasswd
+    depends_on:
+      - openhab-auth-router
+
+  openhab-auth-router-build:
+    image: golang:1.13.8-buster
+    working_dir: /go/src/github.com/hendrikmaus/openhab-auth-router
+    command: go build -o /usr/local/bin/openhab-auth-router /go/src/github.com/hendrikmaus/openhab-auth-router/main.go
+    volumes:
+      - ../../:/go/src/github.com/hendrikmaus/openhab-auth-router
+      - binary:/usr/local/bin/
+
   openhab-auth-router:
-    image: hendrikmaus/openhab-auth-router:local
-    command: 'openhab-auth-router -host="0.0.0.0" -port="80" -target="http://openhab" -config="/usr/share/config.yaml" -log-level="debug"'
+    image: gcr.io/distroless/base-debian10
+    command: '/usr/local/bin/openhab-auth-router -host="0.0.0.0" -port="80" -target="http://openhab" -config="/usr/share/config.yaml" -log-level="debug"'
     ports:
-    - 9090:80
+      - 9090:80
+    restart: always
     volumes:
-    - ./config.yaml:/usr/share/config.yaml
+      - ./config.yaml:/usr/share/config.yaml
+      - binary:/usr/local/bin/
+    depends_on:
+      - openhab-auth-router-build
+
   openhab:
-    image: "openhab/openhab:2.3.0-amd64-debian"
+    image: "openhab/openhab:2.5.1-amd64-debian"
     restart: always
     command: "./start_debug.sh"
-    volumes: 
-    - ./openhab-conf/sitemaps:/openhab/conf/sitemaps
+    volumes:
+      - ./openhab-conf/sitemaps:/openhab/conf/sitemaps
     tty: true
     environment:
       OPENHAB_HTTP_PORT: "80"
       EXTRA_JAVA_OPTS: "-Duser.timezone=Europe/Berlin"
     ports:
-    - 8080:80
+      - 8080:80
+
+volumes:
+  binary:

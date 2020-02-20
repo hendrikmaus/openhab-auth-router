@@ -1,7 +1,7 @@
-# Authenticated Passthrough Example
+# Testing Setup
 
 Add openhab-auth-router as auth proxy between nginx and openHAB
-with basic authentication in place.
+with basic authentication in place. The router is build on each run in its own build container.
 
 Use either `admin` or `demo` user and try the router in action.
 
@@ -9,6 +9,7 @@ Use either `admin` or `demo` user and try the router in action.
 
 - docker
 - docker-compose
+- wait-for-it
 
 ## Services
 
@@ -39,14 +40,14 @@ Use the demo credentials:
 ## Start
 
 ```sh
-docker-compose up openhab-auth-router-build && docker-compose up -d
+docker-compose up -d
 ```
 
 ## Access OpenHAB
 
 ### Through Auth-Router
 
-- Go to openHAB in your browser, private window (it can take up to a few minutes to be available)
+- Go to openHAB in your browser, private window
   - Login as `admin`
     - The `demo` user would not be allowed to access the start
       to setup the openHAB instance

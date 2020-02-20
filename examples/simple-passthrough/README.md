@@ -20,14 +20,14 @@ All services expose ports to offer maximum testing flexibility.
 ## Start
 
 ```sh
-docker-compose up -d
+docker-compose up openhab-auth-router-build && docker-compose up -d
 ```
 
 ## Access OpenHAB
 
 ### Through Auth-Router
 
-- Go to openHAB in your browser
+- Go to openHAB in your browser (it can take up to a few minutes to be available)
   - Open the network console in the dev tools to inspect traffic
 - Click on Demo mode
 - Browse openHAB

@@ -20,7 +20,7 @@ A quick solution to control sitemap access by authenticated users.
 If a working golang setup is available, run:
 
 ```sh
-# requires golang 1.12+
+# requires golang 1.13+
 go get github.com/hendrikmaus/openhab-auth-router
 ```
 
@@ -426,61 +426,3 @@ To push the docker images:
 ```sh
 IMAGE_TAG={version} make pkg-docker-push
 ```
-
-### End-to-End Testing
-
-In order to achieve an end-to-end test, we could use linux container images of openHAB running the included demo mode
- and query it on different paths with different users, asserting the expected behavior.
-
-We might copy the example "authenticated" and re-use and/or extend it for this purpose.
-
-The test should be able to be run in an automated environment and be able to test again multiple openHAB versions.
-
-A very quick and dirty shell script to achieve a test:
-
-```sh
-#!/usr/bin/env bash
-set -eux -o pipefail
-
-# step 1 - bootstrapping an openHAB container and wait for it to be up
-docker-compose up -d
-
-# wait for openhab itself to listen on port 8080
-wait-for-it localhost:8080 -- echo "openHAB container is up"
-
-# wait for nginx to listen on port 80
-wait-for-it localhost:80 -- echo "nginx container is up"
-
-# wait for openhab-auth-router to listen on port 9090
-wait-for-it localhost:9090 -- echo "openhab-auth-router container is up"
-sleep 30
-curl -vL "http://localhost:8080/" | grep "Welcome to openHAB 2 - Initial Setup"
-
-# step 2 - trigger demo mode setup and wait for completion
-curl -vL "http://localhost:8080/start/index?type=demo"
-sleep 60
-curl -vL "http://localhost:8080/basicui/app" | grep "Demo"
-
-# step 3 - run test cases
-# admin can see ui selection on /start/index
-curl -vL -u admin:admin "http://localhost:80/start/index" | grep "Welcome to openHAB"
-
-# admin can see sitemap "admin"
-curl -vL -u admin:admin "http://localhost/basicui/app?sitemap=admin" | grep "Admin"
-
-# demo can not see ui selection on /start/index > redirects to /basicui/app?sitemap=demo
-curl -vL -u demo:demo "http://localhost/start/index" | grep "Demo"
-
-# demo user can not see admin sitemap > redirects to demo sitemap
-curl -vL -u demo:demo "http://localhost/basicui/app?sitemap=admin" | grep "Demo"
-
-# demo user can see demo sitemap
-curl -vL -u demo:demo "http://localhost/basicui/app?sitemap=demo" | grep "Demo"
-
-# demo user can see widgetoverview sitemap
-curl -vL -u demo:demo "http://localhost/basicui/app?sitemap=widgetoverview" | grep "Widget Overview"
-
-docker-compose down
-```
-
-Find a proper framework to run such tests.

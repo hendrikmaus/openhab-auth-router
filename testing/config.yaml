@@ -1,0 +1,20 @@
+passthrough: false
+users:
+  admin:
+    entrypoint: "/start/index"
+    sitemaps:
+      default: admin
+      allowed:
+      - "*"
+  demo:
+    entrypoint: "/basicui/app"
+    sitemaps:
+      default: demo
+      allowed:
+      - demo
+      - widgetoverview
+    paths:
+      "/start/index": { allowed: false }
+      "/paperui"    : { allowed: false }
+      "/doc"        : { allowed: false }
+      "/habpanel"   : { allowed: false }
