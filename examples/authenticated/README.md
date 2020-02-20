@@ -39,14 +39,14 @@ Use the demo credentials:
 ## Start
 
 ```sh
-docker-compose up -d
+docker-compose up openhab-auth-router-build && docker-compose up -d
 ```
 
 ## Access OpenHAB
 
 ### Through Auth-Router
 
-- Go to openHAB in your browser, private window
+- Go to openHAB in your browser, private window (it can take up to a few minutes to be available)
   - Login as `admin`
     - The `demo` user would not be allowed to access the start
       to setup the openHAB instance
