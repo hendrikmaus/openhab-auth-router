@@ -20,7 +20,7 @@ A quick solution to control sitemap access by authenticated users.
 If a working golang setup is available, run:
 
 ```sh
-# requires golang 1.12+
+# requires golang 1.13+
 go get github.com/hendrikmaus/openhab-auth-router
 ```
 
