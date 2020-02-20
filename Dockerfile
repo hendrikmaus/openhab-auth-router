@@ -1,9 +1,8 @@
-FROM golang:1.13.8 as builder
+FROM golang:1.13.8-buster as builder
 
 COPY . /go/src/github.com/hendrikmaus/openhab-auth-router
 WORKDIR /go/src/github.com/hendrikmaus/openhab-auth-router
-RUN go build -tags netgo -ldflags "-X 'main.Version=${IMAGE_TAG}'" -mod=vendor
+RUN make build
 
-FROM alpine
-
-COPY --from=builder /go/src/github.com/hendrikmaus/openhab-auth-router/openhab-auth-router /usr/local/bin
+FROM gcr.io/distroless/base-debian10
+COPY --from=builder /go/src/github.com/hendrikmaus/openhab-auth-router/openhab-auth-router /usr/local/bin/openhab-auth-router
