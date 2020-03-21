@@ -72,14 +72,7 @@ func main() {
 
 	mux.HandleFunc("/liveness", livenessProbeHandler)
 	mux.HandleFunc("/readiness", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := http.Get(remote.String() + "/rest/")
-		if err != nil || resp.StatusCode != http.StatusOK {
-			log.Errorf("Readiness probe failed while trying to access '%s/rest/'", remote.String())
-			w.WriteHeader(http.StatusServiceUnavailable)
-			return
-		}
-		log.Debug("Readiness probe successful")
-		w.WriteHeader(http.StatusOK)
+		readinessProbeHandler(w, r, remote)
 	})
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -185,6 +178,17 @@ func main() {
 
 func livenessProbeHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debug("liveness called")
+	w.WriteHeader(http.StatusOK)
+}
+
+func readinessProbeHandler(w http.ResponseWriter, r *http.Request, remote *url.URL) {
+	resp, err := http.Get(remote.String() + "/rest/")
+	if err != nil || resp.StatusCode != http.StatusOK {
+		log.Errorf("Readiness probe failed while trying to access '%s/rest/'", remote.String())
+		w.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+	log.Debug("Readiness probe successful")
 	w.WriteHeader(http.StatusOK)
 }
 
