@@ -186,28 +186,30 @@ func failRequest(w http.ResponseWriter, r *http.Request, message string) {
 		log.Error(message)
 	}
 	contentType := r.Header.Get("Content-Type")
-	if strings.Contains(contentType, "text/html") {
+
+	switch {
+	case strings.Contains(contentType, "text/html"):
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusBadRequest)
-		if len(message) != 0 {
+		if message != "" {
 			_, err := fmt.Fprint(w, message)
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
-	} else if strings.Contains(contentType, "application/json") {
+	case strings.Contains(contentType, "application/json"):
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusBadRequest)
-		if len(message) != 0 {
+		if message != "" {
 			_, err := fmt.Fprintf(w, "{\"error\":\"%s\"", message)
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
-	} else {
+	default:
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusBadRequest)
-		if len(message) != 0 {
+		if message != "" {
 			_, err := w.Write([]byte(message))
 			if err != nil {
 				log.Fatal(err)
