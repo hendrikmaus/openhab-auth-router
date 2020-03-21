@@ -13,7 +13,7 @@ import (
 	"github.com/hendrikmaus/openhab-auth-router/config"
 	"github.com/hendrikmaus/openhab-auth-router/util"
 	"github.com/sanity-io/litter"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -25,44 +25,47 @@ func main() {
 	logLevel := flag.String("log-level", "info", "Loglevel as in [error|warn|info|debug]")
 	flag.Parse()
 
-	util.ConfigureLogger(logLevel)
+	err := util.ConfigureLogger(logLevel)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	if len(*target) == 0 {
-		logrus.Error("Please set '-target' to the address of your openHAB instance, e.g. 'http://openhab:8080'")
+		log.Error("Please set '-target' to the address of your openHAB instance, e.g. 'http://openhab:8080'")
 		os.Exit(1)
 	}
 
 	if len(*configFilePath) == 0 {
-		logrus.Error("Please set '-config' to the path of your config.yaml file")
+		log.Error("Please set '-config' to the path of your config.yaml file")
 		os.Exit(1)
 	}
 
 	remote, err := url.Parse(*target)
 	if err != nil {
-		logrus.WithError(err).Errorf("Unable to parse target address '%s'", *target)
+		log.WithError(err).Errorf("Unable to parse target address '%s'", *target)
 		os.Exit(1)
 	}
 
 	conf := config.Main{}
 	data, err := ioutil.ReadFile(*configFilePath)
 	if err != nil {
-		logrus.WithError(err).Errorf("Could not read config file '%s'", *configFilePath)
+		log.WithError(err).Errorf("Could not read config file '%s'", *configFilePath)
 		os.Exit(1)
 	}
 
 	err = yaml.Unmarshal(data, &conf)
 	if err != nil {
-		logrus.WithError(err).Error("Could not parse config file, please ensure it is valid YAML")
+		log.WithError(err).Error("Could not parse config file, please ensure it is valid YAML")
 		os.Exit(1)
 	}
 
 	err = config.Validate(&conf)
 	if err != nil {
-		logrus.WithError(err).Error("Failed to validate config")
+		log.WithError(err).Error("Failed to validate config")
 		os.Exit(1)
 	}
 
-	logrus.Debug(litter.Sdump(conf))
+	log.Debug(litter.Sdump(conf))
 
 	proxy := httputil.NewSingleHostReverseProxy(remote)
 	mux := http.NewServeMux()
@@ -74,11 +77,11 @@ func main() {
 	mux.HandleFunc("/readiness", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := http.Get(remote.String() + "/rest/")
 		if err != nil || resp.StatusCode != http.StatusOK {
-			logrus.Errorf("Readiness probe failed while trying to access '%s/rest/'", remote.String())
+			log.Errorf("Readiness probe failed while trying to access '%s/rest/'", remote.String())
 			w.WriteHeader(http.StatusServiceUnavailable)
 			return
 		}
-		logrus.Debug("Readiness probe successful")
+		log.Debug("Readiness probe successful")
 		w.WriteHeader(http.StatusOK)
 	})
 
@@ -92,7 +95,7 @@ func main() {
 		if conf.Passthrough == false {
 			_, ok := conf.Users[user]
 			if ok == false {
-				logrus.Debugf("User '%s' not found in config; tried to access '%s'", user, r.RequestURI)
+				log.Debugf("User '%s' not found in config; tried to access '%s'", user, r.RequestURI)
 				w.WriteHeader(403)
 				return
 			}
