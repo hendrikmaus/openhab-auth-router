@@ -161,8 +161,8 @@ func main() {
 						}
 					}
 					parts := strings.Split(r.RequestURI, "/")
-					url := strings.Replace(r.RequestURI, parts[3], conf.Users[user].Sitemaps.Default, -1)
-					http.Redirect(w, r, url, http.StatusPermanentRedirect)
+					defaultSitemapURL := strings.Replace(r.RequestURI, parts[3], conf.Users[user].Sitemaps.Default, -1)
+					http.Redirect(w, r, defaultSitemapURL, http.StatusPermanentRedirect)
 					return
 				}
 				// TODO: once could check each items requests and assert the target item is contained in an allowed sitemap
