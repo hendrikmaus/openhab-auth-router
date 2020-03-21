@@ -14,7 +14,7 @@ import (
 	"github.com/hendrikmaus/openhab-auth-router/util"
 	"github.com/sanity-io/litter"
 	log "github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 func main() {
