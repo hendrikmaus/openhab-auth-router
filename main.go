@@ -70,10 +70,7 @@ func main() {
 	proxy := httputil.NewSingleHostReverseProxy(remote)
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/liveness", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
-
+	mux.HandleFunc("/liveness", livenessProbeHandler)
 	mux.HandleFunc("/readiness", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := http.Get(remote.String() + "/rest/")
 		if err != nil || resp.StatusCode != http.StatusOK {
@@ -184,6 +181,11 @@ func main() {
 		log.WithError(err).Error("Listener failed")
 		os.Exit(1)
 	}
+}
+
+func livenessProbeHandler(w http.ResponseWriter, r *http.Request) {
+	log.Debug("liveness called")
+	w.WriteHeader(http.StatusOK)
 }
 
 func failRequest(w http.ResponseWriter, r *http.Request, message string) {
