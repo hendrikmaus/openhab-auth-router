@@ -182,7 +182,7 @@ func main() {
 }
 
 func failRequest(w http.ResponseWriter, r *http.Request, message string) {
-	if len(message) != 0 {
+	if message != "" {
 		log.Error(message)
 	}
 	contentType := r.Header.Get("Content-Type")
