@@ -102,6 +102,7 @@ func main() {
 
 			// Every user is forced to their entrypoint
 			if r.RequestURI == "/" {
+				log.Debugf("Redirecting %s to users default entry-point %s", user, conf.Users[user].Entrypoint)
 				http.Redirect(w, r, conf.Users[user].Entrypoint, http.StatusPermanentRedirect)
 				return
 			}
@@ -110,6 +111,7 @@ func main() {
 			for pathPart, pathConfig := range conf.Users[user].Paths {
 				if strings.Contains(r.RequestURI, pathPart) {
 					if pathConfig.Allowed == false {
+						log.Debugf("Redirecting %s to users entrypoint %s - denying access to %s", user, conf.Users[user].Entrypoint, r.RequestURI)
 						http.Redirect(w, r, conf.Users[user].Entrypoint, http.StatusPermanentRedirect)
 						return
 					}
@@ -120,13 +122,14 @@ func main() {
 			if strings.HasPrefix(r.RequestURI, "/basicui/app") {
 				queryString := r.URL.Query()
 				sitemap := queryString.Get("sitemap")
-				if len(sitemap) == 0 {
+				if sitemap == "" {
 					queryString.Set("sitemap", conf.Users[user].Sitemaps.Default)
 					r.URL.RawQuery = queryString.Encode()
+					log.Debugf("Redirecting %s to users default sitemap %s - no sitemap was given on the request", user, conf.Users[user].Sitemaps.Default)
 					http.Redirect(w, r, r.URL.String(), http.StatusPermanentRedirect)
 					return
 				}
-				if len(sitemap) != 0 && sitemap != conf.Users[user].Sitemaps.Default {
+				if sitemap != "" && sitemap != conf.Users[user].Sitemaps.Default {
 					if len(conf.Users[user].Sitemaps.Allowed) == 1 && conf.Users[user].Sitemaps.Allowed[0] == "*" {
 						goto serve
 					}
@@ -137,6 +140,7 @@ func main() {
 					}
 					queryString.Set("sitemap", conf.Users[user].Sitemaps.Default)
 					r.URL.RawQuery = queryString.Encode()
+					log.Debugf("Redirecting %s to users default sitemap %s - denying access to requested sitemap %s", user, conf.Users[user].Sitemaps.Default, sitemap)
 					http.Redirect(w, r, r.URL.String(), http.StatusPermanentRedirect)
 					return
 				}
@@ -162,6 +166,7 @@ func main() {
 					}
 					parts := strings.Split(r.RequestURI, "/")
 					defaultSitemapURL := strings.Replace(r.RequestURI, parts[3], conf.Users[user].Sitemaps.Default, -1)
+					log.Debugf("Redirecting %s to users default sitemap %s - denying access to requested resource %s via REST API call", user, conf.Users[user].Sitemaps.Default, r.RequestURI)
 					http.Redirect(w, r, defaultSitemapURL, http.StatusPermanentRedirect)
 					return
 				}
