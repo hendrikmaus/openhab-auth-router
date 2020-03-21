@@ -174,35 +174,44 @@ func main() {
 	})
 
 	addr := *host + ":" + *port
-	logrus.Infof("Serving at %s", addr)
+	log.Infof("Serving at %s", addr)
 	if err := http.ListenAndServe(addr, mux); err != nil {
-		logrus.WithError(err).Error("Listener failed")
+		log.WithError(err).Error("Listener failed")
 		os.Exit(1)
 	}
 }
 
 func failRequest(w http.ResponseWriter, r *http.Request, message string) {
 	if len(message) != 0 {
-		logrus.Error(message)
+		log.Error(message)
 	}
 	contentType := r.Header.Get("Content-Type")
 	if strings.Contains(contentType, "text/html") {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusBadRequest)
 		if len(message) != 0 {
-			fmt.Fprint(w, message)
+			_, err := fmt.Fprint(w, message)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	} else if strings.Contains(contentType, "application/json") {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusBadRequest)
 		if len(message) != 0 {
-			fmt.Fprintf(w, "{\"error\":\"%s\"", message)
+			_, err := fmt.Fprintf(w, "{\"error\":\"%s\"", message)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	} else {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusBadRequest)
 		if len(message) != 0 {
-			w.Write([]byte(message))
+			_, err := w.Write([]byte(message))
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 }
