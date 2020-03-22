@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/hendrikmaus/openhab-auth-router/config"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
@@ -144,4 +145,34 @@ func TestUnknownUserIsBlocked(t *testing.T) {
 	if status != http.StatusForbidden {
 		t.Errorf("handler responded with wrong status code: got %v wanted %v", status, http.StatusForbidden)
 	}
+}
+
+func TestUserIsRedirectedToDefaultEntrypoint(t *testing.T) {
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Add("X-Forwarded-Username", "test")
+
+	user := config.User{Entrypoint:"/start/index"}
+	conf := config.Main{
+		Passthrough: false,
+		Users: map[string]*config.User{
+			"test": &user,
+		},
+	}
+
+	remoteServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/start/index", r.RequestURI)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer remoteServer.Close()
+	remote, _ := url.Parse(remoteServer.URL)
+	proxy := httputil.NewSingleHostReverseProxy(remote)
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mainHandler(w, r, &conf, proxy)
+	})
+	handler.ServeHTTP(rr, req)
 }

@@ -119,7 +119,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request, conf *config.Main, prox
 		}
 
 		// Every user is forced to their entrypoint
-		if r.RequestURI == "/" {
+		if r.RequestURI == "/" || r.RequestURI == "" {
 			log.Debugf("Redirecting %s to users default entry-point %s", user, conf.Users[user].Entrypoint)
 			http.Redirect(w, r, conf.Users[user].Entrypoint, http.StatusPermanentRedirect)
 			return
