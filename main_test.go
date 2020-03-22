@@ -20,11 +20,7 @@ func TestLivenessHandler(t *testing.T) {
 	handler := http.HandlerFunc(livenessProbeHandler)
 	handler.ServeHTTP(rr, req)
 
-	status := rr.Code
-	if status != http.StatusOK {
-		t.Errorf("handler responded with wrong status code: got '%v' wanted '%v'",
-			status, http.StatusOK)
-	}
+	assert.Equal(t, http.StatusOK, rr.Code)
 }
 
 func TestReadinessHandlerFailsConnectingToRemote(t *testing.T) {
@@ -45,11 +41,7 @@ func TestReadinessHandlerFailsConnectingToRemote(t *testing.T) {
 	})
 	handler.ServeHTTP(rr, req)
 
-	status := rr.Code
-	if status != http.StatusServiceUnavailable {
-		t.Errorf("handler responded with wrong status code: got '%v' wanted '%v'",
-			status, http.StatusServiceUnavailable)
-	}
+	assert.Equal(t, http.StatusServiceUnavailable, rr.Code)
 }
 
 func TestReadinessHandler(t *testing.T) {
@@ -70,11 +62,7 @@ func TestReadinessHandler(t *testing.T) {
 	})
 	handler.ServeHTTP(rr, req)
 
-	status := rr.Code
-	if status != http.StatusOK {
-		t.Errorf("handler responded with wrong status code: got '%v' wanted '%v'",
-			status, http.StatusOK)
-	}
+	assert.Equal(t, http.StatusOK, rr.Code)
 }
 
 func TestMissingHeaderInNonPassthroughModeFails(t *testing.T) {
@@ -90,15 +78,9 @@ func TestMissingHeaderInNonPassthroughModeFails(t *testing.T) {
 	})
 	handler.ServeHTTP(rr, req)
 
-	status := rr.Code
-	if status != http.StatusBadRequest {
-		t.Errorf("handler responded with wrong status code: got %v wanted %v", status, http.StatusBadRequest)
-	}
-
-	expected := "The header 'X-Forwarded-Username' is either not set or empty"
-	if rr.Body.String() != expected {
-		t.Errorf("handler returned unexpected body: got '%v' wanted '%v'", rr.Body.String(), expected)
-	}
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	assert.Equal(t, "The header 'X-Forwarded-Username' is either not set or empty",
+		rr.Body.String())
 }
 
 func TestPassthrough(t *testing.T) {
@@ -121,10 +103,7 @@ func TestPassthrough(t *testing.T) {
 	})
 	handler.ServeHTTP(rr, req)
 
-	status := rr.Code
-	if status != http.StatusOK {
-		t.Errorf("handler responded with wrong status code: got %v wanted %v", status, http.StatusOK)
-	}
+	assert.Equal(t, http.StatusOK, rr.Code)
 }
 
 func TestUnknownUserIsBlocked(t *testing.T) {
@@ -141,10 +120,7 @@ func TestUnknownUserIsBlocked(t *testing.T) {
 	})
 	handler.ServeHTTP(rr, req)
 
-	status := rr.Code
-	if status != http.StatusForbidden {
-		t.Errorf("handler responded with wrong status code: got %v wanted %v", status, http.StatusForbidden)
-	}
+	assert.Equal(t, http.StatusForbidden, rr.Code)
 }
 
 func TestUserIsRedirectedToDefaultEntrypoint(t *testing.T) {
