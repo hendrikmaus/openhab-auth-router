@@ -3,14 +3,14 @@ set -eu -o pipefail
 set -x
 
 # step 0 - run go build + fix permissions
-docker run --rm -it \
+docker run --rm \
   -v "$(pwd)/../":/go/src/github.com/hendrikmaus/openhab-auth-router \
   -w /go/src/github.com/hendrikmaus/openhab-auth-router \
   golang:1.13.8-buster \
   go build -o openhab-auth-router -mod=vendor /go/src/github.com/hendrikmaus/openhab-auth-router/main.go
 
 mv ../openhab-auth-router .
-docker run --rm -it \
+docker run --rm \
   -v "$(pwd)":/workspace \
   -w /workspace \
   busybox:latest \
