@@ -12,8 +12,5 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: |
-          wget -O wait-for-it https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh
-          chmod +x wait-for-it
-      - run: |
           cd testing
           ./test.sh
