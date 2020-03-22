@@ -257,3 +257,77 @@ func TestUserIsRedirectedToDefaultSitemapWhenAccessIsDenied(t *testing.T) {
 	})
 	handler.ServeHTTP(rr, req)
 }
+
+func TestSitemapAccessWildcard(t *testing.T) {
+	req, err := http.NewRequest("GET", "/basicui/app", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Add("X-Forwarded-Username", "test")
+	q := req.URL.Query()
+	q.Set("sitemap", "admin")
+	req.URL.RawQuery = q.Encode()
+
+	conf := config.Main{
+		Passthrough: false,
+		Users: map[string]*config.User{
+			"test": {
+				Sitemaps: config.Sitemap{
+					Default: "test_sitemap",
+					Allowed: []string{"*"},
+				},
+			},
+		},
+	}
+
+	remoteServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/basicui/app?sitemap=admin", r.URL.RequestURI())
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer remoteServer.Close()
+	remote, _ := url.Parse(remoteServer.URL)
+	proxy := httputil.NewSingleHostReverseProxy(remote)
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mainHandler(w, r, &conf, proxy)
+	})
+	handler.ServeHTTP(rr, req)
+}
+
+func TestSitemapAccessToAllowedSitemaps(t *testing.T) {
+	req, err := http.NewRequest("GET", "/basicui/app", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Add("X-Forwarded-Username", "test")
+	q := req.URL.Query()
+	q.Set("sitemap", "admin")
+	req.URL.RawQuery = q.Encode()
+
+	conf := config.Main{
+		Passthrough: false,
+		Users: map[string]*config.User{
+			"test": {
+				Sitemaps: config.Sitemap{
+					Default: "test_sitemap",
+					Allowed: []string{"admin","default"},
+				},
+			},
+		},
+	}
+
+	remoteServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/basicui/app?sitemap=admin", r.URL.RequestURI())
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer remoteServer.Close()
+	remote, _ := url.Parse(remoteServer.URL)
+	proxy := httputil.NewSingleHostReverseProxy(remote)
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mainHandler(w, r, &conf, proxy)
+	})
+	handler.ServeHTTP(rr, req)
+}
