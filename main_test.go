@@ -152,3 +152,37 @@ func TestUserIsRedirectedToDefaultEntrypoint(t *testing.T) {
 	})
 	handler.ServeHTTP(rr, req)
 }
+
+func TestUserIsRedirectedToDefaultEntrypointOnDisallowedPath(t *testing.T) {
+	req, err := http.NewRequest("GET", "/start/index", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Add("X-Forwarded-Username", "test")
+
+	conf := config.Main{
+		Passthrough: false,
+		Users: map[string]*config.User{
+			"test": {
+				Entrypoint:"/default/entrypoint",
+				Paths: map[string]*config.Path{
+					"/start/index": {Allowed:false},
+				},
+			},
+		},
+	}
+
+	remoteServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/default/entrypoint", r.RequestURI)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer remoteServer.Close()
+	remote, _ := url.Parse(remoteServer.URL)
+	proxy := httputil.NewSingleHostReverseProxy(remote)
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mainHandler(w, r, &conf, proxy)
+	})
+	handler.ServeHTTP(rr, req)
+}
