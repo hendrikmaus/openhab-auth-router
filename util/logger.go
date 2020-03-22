@@ -19,7 +19,7 @@ func ConfigureLogger(logLevel *string) error {
 	case "debug":
 		logrus.SetLevel(logrus.DebugLevel)
 	default:
-		return errors.New("Unknown loglevel")
+		return errors.New("unknown loglevel")
 	}
 
 	return nil
