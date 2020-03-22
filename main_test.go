@@ -125,3 +125,23 @@ func TestPassthrough(t *testing.T) {
 		t.Errorf("handler responded with wrong status code: got %v wanted %v", status, http.StatusOK)
 	}
 }
+
+func TestUnknownUserIsBlocked(t *testing.T) {
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Add("X-Forwarded-Username", "test")
+
+	conf := config.Main{Passthrough:false}
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mainHandler(w, r, &conf, nil)
+	})
+	handler.ServeHTTP(rr, req)
+
+	status := rr.Code
+	if status != http.StatusForbidden {
+		t.Errorf("handler responded with wrong status code: got %v wanted %v", status, http.StatusForbidden)
+	}
+}
