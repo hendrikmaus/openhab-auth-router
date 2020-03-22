@@ -62,4 +62,4 @@ curl -sL -u demo:demo "http://localhost/basicui/app?sitemap=demo" | grep "Demo"
 curl -sL -u demo:demo "http://localhost/basicui/app?sitemap=widgetoverview" | grep "Widget Overview"
 
 # cleanup
-rm openhab-auth-router wait-for-it
+rm openhab-auth-router
