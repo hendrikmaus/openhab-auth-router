@@ -194,7 +194,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request, conf *config.Main, prox
 	}
 
 serve:
-	proxy.ServeHTTP(w, r)
+	go proxy.ServeHTTP(w, r)
 }
 
 func failRequest(w http.ResponseWriter, r *http.Request, message string) {
