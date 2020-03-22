@@ -138,19 +138,14 @@ func TestUserIsRedirectedToDefaultEntrypoint(t *testing.T) {
 		},
 	}
 
-	remoteServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/start/index", r.URL.RequestURI())
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer remoteServer.Close()
-	remote, _ := url.Parse(remoteServer.URL)
-	proxy := httputil.NewSingleHostReverseProxy(remote)
-
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mainHandler(w, r, &conf, proxy)
+		mainHandler(w, r, &conf, nil)
 	})
 	handler.ServeHTTP(rr, req)
+
+	loc, _ := rr.Result().Location()
+	assert.Equal(t, "/start/index", loc.RequestURI())
 }
 
 func TestUserIsRedirectedToDefaultEntrypointOnDisallowedPath(t *testing.T) {
@@ -172,19 +167,14 @@ func TestUserIsRedirectedToDefaultEntrypointOnDisallowedPath(t *testing.T) {
 		},
 	}
 
-	remoteServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/default/entrypoint", r.URL.RequestURI())
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer remoteServer.Close()
-	remote, _ := url.Parse(remoteServer.URL)
-	proxy := httputil.NewSingleHostReverseProxy(remote)
-
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mainHandler(w, r, &conf, proxy)
+		mainHandler(w, r, &conf, nil)
 	})
 	handler.ServeHTTP(rr, req)
+
+	loc, _ := rr.Result().Location()
+	assert.Equal(t, "/default/entrypoint", loc.RequestURI())
 }
 
 func TestUserIsRedirectedToDefaultSitemapWhenNoSitemapIsGiven(t *testing.T) {
@@ -205,20 +195,14 @@ func TestUserIsRedirectedToDefaultSitemapWhenNoSitemapIsGiven(t *testing.T) {
 		},
 	}
 
-	remoteServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/basicui/app", r.URL.RequestURI())
-		assert.Equal(t, conf.Users["test"].Sitemaps.Default, r.URL.Query().Get("sitemap"))
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer remoteServer.Close()
-	remote, _ := url.Parse(remoteServer.URL)
-	proxy := httputil.NewSingleHostReverseProxy(remote)
-
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mainHandler(w, r, &conf, proxy)
+		mainHandler(w, r, &conf, nil)
 	})
 	handler.ServeHTTP(rr, req)
+
+	loc, _ := rr.Result().Location()
+	assert.Equal(t, "/basicui/app?sitemap=test_sitemap", loc.RequestURI())
 }
 
 func TestUserIsRedirectedToDefaultSitemapWhenAccessIsDenied(t *testing.T) {
@@ -242,20 +226,14 @@ func TestUserIsRedirectedToDefaultSitemapWhenAccessIsDenied(t *testing.T) {
 		},
 	}
 
-	remoteServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/basicui/app", r.URL.RequestURI())
-		assert.Equal(t, conf.Users["test"].Sitemaps.Default, r.URL.Query().Get("sitemap"))
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer remoteServer.Close()
-	remote, _ := url.Parse(remoteServer.URL)
-	proxy := httputil.NewSingleHostReverseProxy(remote)
-
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mainHandler(w, r, &conf, proxy)
+		mainHandler(w, r, &conf, nil)
 	})
 	handler.ServeHTTP(rr, req)
+
+	loc, _ := rr.Result().Location()
+	assert.Equal(t, "/basicui/app?sitemap=test_sitemap", loc.RequestURI())
 }
 
 func TestSitemapAccessWildcard(t *testing.T) {
@@ -319,6 +297,172 @@ func TestSitemapAccessToAllowedSitemaps(t *testing.T) {
 
 	remoteServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/basicui/app?sitemap=admin", r.URL.RequestURI())
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer remoteServer.Close()
+	remote, _ := url.Parse(remoteServer.URL)
+	proxy := httputil.NewSingleHostReverseProxy(remote)
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mainHandler(w, r, &conf, proxy)
+	})
+	handler.ServeHTTP(rr, req)
+}
+
+func TestRestEvents(t *testing.T) {
+	req, err := http.NewRequest("GET", "/rest/sitemaps/events", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Add("X-Forwarded-Username", "test")
+
+	conf := config.Main{
+		Passthrough: false,
+		Users: map[string]*config.User{
+			"test": {
+				Sitemaps: config.Sitemap{
+					Default: "test_sitemap",
+					Allowed: []string{"admin","default"},
+				},
+			},
+		},
+	}
+
+	remoteServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/rest/sitemaps/events", r.URL.RequestURI())
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer remoteServer.Close()
+	remote, _ := url.Parse(remoteServer.URL)
+	proxy := httputil.NewSingleHostReverseProxy(remote)
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mainHandler(w, r, &conf, proxy)
+	})
+	handler.ServeHTTP(rr, req)
+}
+
+func TestRestDefaultSitemapRedirect(t *testing.T) {
+	req, err := http.NewRequest("GET", "/rest/sitemaps/_default", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Add("X-Forwarded-Username", "test")
+
+	conf := config.Main{
+		Passthrough: false,
+		Users: map[string]*config.User{
+			"test": {
+				Sitemaps: config.Sitemap{
+					Default: "test_sitemap",
+					Allowed: []string{"admin","default"},
+				},
+			},
+		},
+	}
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mainHandler(w, r, &conf, nil)
+	})
+	handler.ServeHTTP(rr, req)
+
+	loc, _ := rr.Result().Location()
+	assert.Equal(t, "/rest/sitemaps/test_sitemap", loc.RequestURI())
+}
+
+func TestRestUserIsRedirectedToDefaultSitemapWhenDisallowed(t *testing.T) {
+	req, err := http.NewRequest("GET", "/rest/sitemaps/admin", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Add("X-Forwarded-Username", "test")
+
+	conf := config.Main{
+		Passthrough: false,
+		Users: map[string]*config.User{
+			"test": {
+				Sitemaps: config.Sitemap{
+					Default: "test_sitemap",
+					Allowed: []string{"default"},
+				},
+			},
+		},
+	}
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mainHandler(w, r, &conf, nil)
+	})
+	handler.ServeHTTP(rr, req)
+
+	loc, _ := rr.Result().Location()
+	assert.Equal(t, "/rest/sitemaps/test_sitemap", loc.RequestURI())
+}
+
+func TestRestSitemapAccessWildcard(t *testing.T) {
+	req, err := http.NewRequest("GET", "/rest/sitemaps/admin", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Add("X-Forwarded-Username", "test")
+	q := req.URL.Query()
+	q.Set("sitemap", "admin")
+	req.URL.RawQuery = q.Encode()
+
+	conf := config.Main{
+		Passthrough: false,
+		Users: map[string]*config.User{
+			"test": {
+				Sitemaps: config.Sitemap{
+					Default: "test_sitemap",
+					Allowed: []string{"*"},
+				},
+			},
+		},
+	}
+
+	remoteServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/rest/sitemaps/admin?sitemap=admin", r.URL.RequestURI())
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer remoteServer.Close()
+	remote, _ := url.Parse(remoteServer.URL)
+	proxy := httputil.NewSingleHostReverseProxy(remote)
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mainHandler(w, r, &conf, proxy)
+	})
+	handler.ServeHTTP(rr, req)
+}
+
+func TestRestSitemapAccessToAllowedSitemaps(t *testing.T) {
+	req, err := http.NewRequest("GET", "/rest/sitemaps/admin", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Add("X-Forwarded-Username", "test")
+	q := req.URL.Query()
+	q.Set("sitemap", "admin")
+	req.URL.RawQuery = q.Encode()
+
+	conf := config.Main{
+		Passthrough: false,
+		Users: map[string]*config.User{
+			"test": {
+				Sitemaps: config.Sitemap{
+					Default: "test_sitemap",
+					Allowed: []string{"admin","default"},
+				},
+			},
+		},
+	}
+
+	remoteServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/rest/sitemaps/admin?sitemap=admin", r.URL.RequestURI())
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer remoteServer.Close()
