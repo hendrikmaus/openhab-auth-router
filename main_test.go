@@ -21,7 +21,7 @@ func TestLivenessHandler(t *testing.T) {
 
 	status := rr.Code
 	if status != http.StatusOK {
-		t.Errorf("handler responded with wrong status code: got %v wanted %v",
+		t.Errorf("handler responded with wrong status code: got '%v' wanted '%v'",
 			status, http.StatusOK)
 	}
 }
@@ -46,7 +46,7 @@ func TestReadinessHandlerFailsConnectingToRemote(t *testing.T) {
 
 	status := rr.Code
 	if status != http.StatusServiceUnavailable {
-		t.Errorf("handler responded with wrong status code: got %v wanted %v",
+		t.Errorf("handler responded with wrong status code: got '%v' wanted '%v'",
 			status, http.StatusServiceUnavailable)
 	}
 }
