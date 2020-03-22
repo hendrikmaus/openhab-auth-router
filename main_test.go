@@ -139,7 +139,7 @@ func TestUserIsRedirectedToDefaultEntrypoint(t *testing.T) {
 	}
 
 	remoteServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/start/index", r.RequestURI)
+		assert.Equal(t, "/start/index", r.URL.RequestURI())
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer remoteServer.Close()
@@ -173,7 +173,78 @@ func TestUserIsRedirectedToDefaultEntrypointOnDisallowedPath(t *testing.T) {
 	}
 
 	remoteServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/default/entrypoint", r.RequestURI)
+		assert.Equal(t, "/default/entrypoint", r.URL.RequestURI())
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer remoteServer.Close()
+	remote, _ := url.Parse(remoteServer.URL)
+	proxy := httputil.NewSingleHostReverseProxy(remote)
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mainHandler(w, r, &conf, proxy)
+	})
+	handler.ServeHTTP(rr, req)
+}
+
+func TestUserIsRedirectedToDefaultSitemapWhenNoSitemapIsGiven(t *testing.T) {
+	req, err := http.NewRequest("GET", "/basicui/app", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Add("X-Forwarded-Username", "test")
+
+	conf := config.Main{
+		Passthrough: false,
+		Users: map[string]*config.User{
+			"test": {
+				Sitemaps: config.Sitemap{
+					Default: "test_sitemap",
+				},
+			},
+		},
+	}
+
+	remoteServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/basicui/app", r.URL.RequestURI())
+		assert.Equal(t, conf.Users["test"].Sitemaps.Default, r.URL.Query().Get("sitemap"))
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer remoteServer.Close()
+	remote, _ := url.Parse(remoteServer.URL)
+	proxy := httputil.NewSingleHostReverseProxy(remote)
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mainHandler(w, r, &conf, proxy)
+	})
+	handler.ServeHTTP(rr, req)
+}
+
+func TestUserIsRedirectedToDefaultSitemapWhenAccessIsDenied(t *testing.T) {
+	req, err := http.NewRequest("GET", "/basicui/app", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Add("X-Forwarded-Username", "test")
+	q := req.URL.Query()
+	q.Set("sitemap", "admin")
+	req.URL.RawQuery = q.Encode()
+
+	conf := config.Main{
+		Passthrough: false,
+		Users: map[string]*config.User{
+			"test": {
+				Sitemaps: config.Sitemap{
+					Default: "test_sitemap",
+				},
+			},
+		},
+	}
+
+	remoteServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/basicui/app", r.URL.RequestURI())
+		assert.Equal(t, conf.Users["test"].Sitemaps.Default, r.URL.Query().Get("sitemap"))
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer remoteServer.Close()
