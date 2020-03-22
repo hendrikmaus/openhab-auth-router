@@ -1,0 +1,79 @@
+builds:
+  - id: default
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - freebsd
+      - darwin
+    goarch:
+      - amd64
+      - arm
+      - arm64
+    goarm:
+      - '6'
+      - '7'
+    ignore:
+      - goos: freebsd
+        goarch: arm
+      - goos: freebsd
+        goarch: arm64
+archives:
+  - replacements:
+      darwin: Darwin
+      freebsd: FreeBSD
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'s
+      - '^test:'
+dockers:
+  - goos: linux
+    goarch: amd64
+    builds:
+      - default
+    binaries:
+      - openhab-auth-router
+    image_templates:
+      - hendrikmaus/openhab-auth-router:{{ .Tag }}
+      - hendrikmaus/openhab-auth-router:latest
+    dockerfile: Dockerfile
+# Maybe these will work some day or https://github.com/goreleaser/goreleaser/issues/530 gets done
+#  - goos: linux
+#    goarch: arm
+#    goarm: '6'
+#    builds:
+#      - default
+#    image_templates:
+#      - hendrikmaus/openhab-auth-router:{{ .Tag }}-arm32v6
+#    dockerfile: Dockerfile.arm32v6
+#    goarch: arm
+#    goarm: '7'
+#    builds:
+#      - default
+#    image_templates:
+#      - hendrikmaus/openhab-auth-router:{{ .Tag }}-arm32v7
+#    dockerfile: Dockerfile.arm32v7
+#  - goos: linux
+#    goarch: arm64
+#    goarm: '8'
+#    builds:
+#      - default
+#    image_templates:
+#      - hendrikmaus/openhab-auth-router:{{ .Tag }}-arm64v8
+#      - hendrikmaus/openhab-auth-router:{{ .Tag }}-arm64
+#    dockerfile: Dockerfile.arm64v8
+release:
+  github:
+    owner: hendrikmaus
+    name: openhab-auth-router
