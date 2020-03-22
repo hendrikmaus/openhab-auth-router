@@ -1,5 +1,7 @@
 # OpenHAB Auth Router
 
+[![codecov](https://codecov.io/gh/hendrikmaus/openhab-auth-router/branch/master/graph/badge.svg)](https://codecov.io/gh/hendrikmaus/openhab-auth-router)
+
 A quick solution to control sitemap access by authenticated users.
 
 ## Use Case
