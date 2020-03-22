@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/hendrikmaus/openhab-auth-router/config"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -69,7 +70,31 @@ func TestReadinessHandler(t *testing.T) {
 
 	status := rr.Code
 	if status != http.StatusOK {
-		t.Errorf("handler responded with wrong status code: got %v wanted %v",
+		t.Errorf("handler responded with wrong status code: got '%v' wanted '%v'",
 			status, http.StatusOK)
+	}
+}
+
+func TestMissingHeaderInNonPassthroughModeFails(t *testing.T) {
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	conf := config.Main{Passthrough:false}
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mainHandler(w, r, &conf, nil)
+	})
+	handler.ServeHTTP(rr, req)
+
+	status := rr.Code
+	if status != http.StatusBadRequest {
+		t.Errorf("handler responded with wrong status code: got %v wanted %v", status, http.StatusBadRequest)
+	}
+
+	expected := "The header 'X-Forwarded-Username' is either not set or empty"
+	if rr.Body.String() != expected {
+		t.Errorf("handler returned unexpected body: got '%v' wanted '%v'", rr.Body.String(), expected)
 	}
 }
