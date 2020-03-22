@@ -113,13 +113,15 @@ func mainHandler(w http.ResponseWriter, r *http.Request, conf *config.Main, prox
 	if conf.Passthrough == false {
 		_, ok := conf.Users[user]
 		if ok == false {
-			log.Debugf("User '%s' not found in config; tried to access '%s'", user, r.RequestURI)
+			log.Debugf("User '%s' not found in config; tried to access '%s'", user, r.URL.RequestURI())
 			w.WriteHeader(403)
 			return
 		}
 
+		log.Info(litter.Sdump(r.URL.RequestURI()))
+
 		// Every user is forced to their entrypoint
-		if r.RequestURI == "/" || r.RequestURI == "" {
+		if r.URL.RequestURI() == "/" || r.URL.RequestURI() == "" {
 			log.Debugf("Redirecting %s to users default entry-point %s", user, conf.Users[user].Entrypoint)
 			http.Redirect(w, r, conf.Users[user].Entrypoint, http.StatusPermanentRedirect)
 			return
@@ -127,9 +129,9 @@ func mainHandler(w http.ResponseWriter, r *http.Request, conf *config.Main, prox
 
 		// Check if the requested path is disallowed; if yes go to entrypoint
 		for pathPart, pathConfig := range conf.Users[user].Paths {
-			if strings.Contains(r.RequestURI, pathPart) {
+			if strings.Contains(r.URL.RequestURI(), pathPart) {
 				if pathConfig.Allowed == false {
-					log.Debugf("Redirecting %s to users entrypoint %s - denying access to %s", user, conf.Users[user].Entrypoint, r.RequestURI)
+					log.Debugf("Redirecting %s to users entrypoint %s - denying access to %s", user, conf.Users[user].Entrypoint, r.URL.RequestURI())
 					http.Redirect(w, r, conf.Users[user].Entrypoint, http.StatusPermanentRedirect)
 					return
 				}
@@ -137,7 +139,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request, conf *config.Main, prox
 		}
 
 		// Handle basicui access
-		if strings.HasPrefix(r.RequestURI, "/basicui/app") {
+		if strings.HasPrefix(r.URL.RequestURI(), "/basicui/app") {
 			queryString := r.URL.Query()
 			sitemap := queryString.Get("sitemap")
 			if sitemap == "" {
@@ -165,26 +167,26 @@ func mainHandler(w http.ResponseWriter, r *http.Request, conf *config.Main, prox
 		}
 
 		// Handle rest access
-		if strings.HasPrefix(r.RequestURI, "/rest") {
-			if strings.HasPrefix(r.RequestURI, "/rest/sitemaps/events") {
+		if strings.HasPrefix(r.URL.RequestURI(), "/rest") {
+			if strings.HasPrefix(r.URL.RequestURI(), "/rest/sitemaps/events") {
 				goto serve
 			}
-			if strings.HasPrefix(r.RequestURI, "/rest/sitemaps/_default") {
+			if strings.HasPrefix(r.URL.RequestURI(), "/rest/sitemaps/_default") {
 				http.Redirect(w, r, "/rest/sitemaps/"+conf.Users[user].Sitemaps.Default, http.StatusPermanentRedirect)
 				return
 			}
-			if strings.HasPrefix(r.RequestURI, "/rest/sitemaps/") {
+			if strings.HasPrefix(r.URL.RequestURI(), "/rest/sitemaps/") {
 				if len(conf.Users[user].Sitemaps.Allowed) == 1 && conf.Users[user].Sitemaps.Allowed[0] == "*" {
 					goto serve
 				}
 				for _, allowedSitemap := range conf.Users[user].Sitemaps.Allowed {
-					if strings.Contains(r.RequestURI, allowedSitemap) {
+					if strings.Contains(r.URL.RequestURI(), allowedSitemap) {
 						goto serve
 					}
 				}
-				parts := strings.Split(r.RequestURI, "/")
-				defaultSitemapURL := strings.Replace(r.RequestURI, parts[3], conf.Users[user].Sitemaps.Default, -1)
-				log.Debugf("Redirecting %s to users default sitemap %s - denying access to requested resource %s via REST API call", user, conf.Users[user].Sitemaps.Default, r.RequestURI)
+				parts := strings.Split(r.URL.RequestURI(), "/")
+				defaultSitemapURL := strings.Replace(r.URL.RequestURI(), parts[3], conf.Users[user].Sitemaps.Default, -1)
+				log.Debugf("Redirecting %s to users default sitemap %s - denying access to requested resource %s via REST API call", user, conf.Users[user].Sitemaps.Default, r.URL.RequestURI())
 				http.Redirect(w, r, defaultSitemapURL, http.StatusPermanentRedirect)
 				return
 			}
