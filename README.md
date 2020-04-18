@@ -1,6 +1,6 @@
 # OpenHAB Auth Router
 
-[![CircleCI](https://circleci.com/gh/hendrikmaus/openhab-auth-router/tree/master.svg?style=svg)](https://circleci.com/gh/hendrikmaus/openhab-auth-router/tree/master)
+[![codecov](https://codecov.io/gh/hendrikmaus/openhab-auth-router/branch/master/graph/badge.svg)](https://codecov.io/gh/hendrikmaus/openhab-auth-router)
 
 A quick solution to control sitemap access by authenticated users.
 
@@ -12,7 +12,7 @@ A quick solution to control sitemap access by authenticated users.
 - You want to restrict user access to sitemaps
 
 > Nginx is not a hard-requirement; any other service capable of your desired
-> authentication and setting a heder called `X-Forwarded-Username` to the authenticated
+> authentication and setting a header called `X-Forwarded-Username` to the authenticated
 > username will work fine
 
 ## Install
@@ -90,7 +90,7 @@ users:
       "/habpanel"   : { allowed: false }
 ```
 
-This config disbales passthrough, so the defined user rules take effect.
+This config disables passthrough, so the defined user rules take effect.
 
 The admin user is allowed to access every path, and sitemap. The entrypoint
 is set to the default path of an openHAB installation, the dashboard.

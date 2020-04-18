@@ -12,14 +12,6 @@ services:
     depends_on:
       - openhab-auth-router
 
-  openhab-auth-router-build:
-    image: golang:1.13.8-buster
-    working_dir: /go/src/github.com/hendrikmaus/openhab-auth-router
-    command: go build -o /usr/local/bin/openhab-auth-router /go/src/github.com/hendrikmaus/openhab-auth-router/main.go
-    volumes:
-      - ../:/go/src/github.com/hendrikmaus/openhab-auth-router
-      - binary:/usr/local/bin/
-
   openhab-auth-router:
     image: gcr.io/distroless/base-debian10
     command: '/usr/local/bin/openhab-auth-router -host="0.0.0.0" -port="80" -target="http://openhab" -config="/usr/share/config.yaml" -log-level="debug"'
@@ -27,10 +19,8 @@ services:
       - 9090:80
     volumes:
       - ./config.yaml:/usr/share/config.yaml
-      - binary:/usr/local/bin/
+      - ./:/usr/local/bin
     restart: always
-    depends_on:
-      - openhab-auth-router-build
 
   openhab:
     image: "openhab/openhab:2.5.1-amd64-debian"
@@ -44,6 +34,3 @@ services:
       EXTRA_JAVA_OPTS: "-Duser.timezone=Europe/Berlin"
     ports:
       - 8080:80
-
-volumes:
-  binary:
