@@ -118,7 +118,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request, conf *config.Main, prox
 			return
 		}
 
-		log.Info(litter.Sdump(r.URL.RequestURI()))
+		log.WithField("uri", r.URL.RequestURI()).Debugf("access log")
 
 		// Every user is forced to their entrypoint
 		if r.URL.RequestURI() == "/" || r.URL.RequestURI() == "" {
