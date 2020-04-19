@@ -94,7 +94,7 @@ func main() {
 		log.Fatal().Err(err).Msg("invalid options, exiting")
 	}
 	
-	log.Debug().Interface("config", opts).Msg("processed concfiguration")
+	log.Debug().Interface("config", opts).Msg("processed configuration")
 
 	router := Router{
 		Log:  logger,
