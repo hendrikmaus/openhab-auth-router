@@ -410,19 +410,18 @@ make pkg-docker
 
 ### Releasing
 
-The router is distributed for many systems, the Makefile provides the means to build
-all required packages:
+We use goreleaser to do the actual build and release process for the static binaries; container images
+are built separately:
 
-```sh
-IMAGE_TAG={version} make pkg-all
+```shell script 
+TAG=v0.1.0-alpha make release
 ```
 
-Now the `./dist` folder is populated and the docker image is built locally.
+This will:
 
-To push the docker images:
+- tag the current commit
+- push the tag
+- run goreleaser to create a release draft
+- build and push all container images
 
-> The docker images can be built individually, run `make` to see the relevant targets.
-
-```sh
-IMAGE_TAG={version} make pkg-docker-push
-```
+After the process finishes, log into github and publish the release
