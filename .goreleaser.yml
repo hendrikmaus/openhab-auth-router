@@ -77,3 +77,4 @@ release:
   github:
     owner: hendrikmaus
     name: openhab-auth-router
+  draft: true
