@@ -3,3 +3,4 @@
 !/dist/.gitkeep
 .idea
 /testing/wait-for-it
+.envrc
