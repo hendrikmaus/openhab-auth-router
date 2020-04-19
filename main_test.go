@@ -80,7 +80,7 @@ func TestMissingHeaderInNonPassthroughModeFails(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	conf := config.Main{Passthrough:false}
+	conf := config.Main{Passthrough: false}
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mainHandler(w, r, &conf, nil)
@@ -105,7 +105,7 @@ func TestPassthrough(t *testing.T) {
 	remote, _ := url.Parse(remoteServer.URL)
 	proxy := httputil.NewSingleHostReverseProxy(remote)
 
-	conf := config.Main{Passthrough:true}
+	conf := config.Main{Passthrough: true}
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mainHandler(w, r, &conf, proxy)
@@ -122,7 +122,7 @@ func TestUnknownUserIsBlocked(t *testing.T) {
 	}
 	req.Header.Add("X-Forwarded-Username", "test")
 
-	conf := config.Main{Passthrough:false}
+	conf := config.Main{Passthrough: false}
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mainHandler(w, r, &conf, nil)
@@ -139,7 +139,7 @@ func TestUserIsRedirectedToDefaultEntrypoint(t *testing.T) {
 	}
 	req.Header.Add("X-Forwarded-Username", "test")
 
-	user := config.User{Entrypoint:"/start/index"}
+	user := config.User{Entrypoint: "/start/index"}
 	conf := config.Main{
 		Passthrough: false,
 		Users: map[string]*config.User{
@@ -168,9 +168,9 @@ func TestUserIsRedirectedToDefaultEntrypointOnDisallowedPath(t *testing.T) {
 		Passthrough: false,
 		Users: map[string]*config.User{
 			"test": {
-				Entrypoint:"/default/entrypoint",
+				Entrypoint: "/default/entrypoint",
 				Paths: map[string]*config.Path{
-					"/start/index": {Allowed:false},
+					"/start/index": {Allowed: false},
 				},
 			},
 		},
@@ -298,7 +298,7 @@ func TestSitemapAccessToAllowedSitemaps(t *testing.T) {
 			"test": {
 				Sitemaps: config.Sitemap{
 					Default: "test_sitemap",
-					Allowed: []string{"admin","default"},
+					Allowed: []string{"admin", "default"},
 				},
 			},
 		},
@@ -332,7 +332,7 @@ func TestRestEvents(t *testing.T) {
 			"test": {
 				Sitemaps: config.Sitemap{
 					Default: "test_sitemap",
-					Allowed: []string{"admin","default"},
+					Allowed: []string{"admin", "default"},
 				},
 			},
 		},
@@ -366,7 +366,7 @@ func TestRestDefaultSitemapRedirect(t *testing.T) {
 			"test": {
 				Sitemaps: config.Sitemap{
 					Default: "test_sitemap",
-					Allowed: []string{"admin","default"},
+					Allowed: []string{"admin", "default"},
 				},
 			},
 		},
@@ -464,7 +464,7 @@ func TestRestSitemapAccessToAllowedSitemaps(t *testing.T) {
 			"test": {
 				Sitemaps: config.Sitemap{
 					Default: "test_sitemap",
-					Allowed: []string{"admin","default"},
+					Allowed: []string{"admin", "default"},
 				},
 			},
 		},

@@ -23,8 +23,8 @@ type Options struct {
 	Target         string
 	ConfigFilePath string
 	LogLevel       string
-	Remote *url.URL
-	Config *config.Main
+	Remote         *url.URL
+	Config         *config.Main
 }
 
 func (o *Options) Validate() error {
@@ -44,7 +44,7 @@ func (o *Options) Validate() error {
 
 	o.Config = &config.Main{}
 	data, err := ioutil.ReadFile(o.ConfigFilePath)
-	if err != nil{
+	if err != nil {
 		return errors.New(fmt.Sprintf("could not read config file '%s'", o.ConfigFilePath))
 	}
 
@@ -57,7 +57,7 @@ func (o *Options) Validate() error {
 	if err != nil {
 		return errors.New("failed to validate config")
 	}
-	
+
 	return nil
 }
 
@@ -89,11 +89,11 @@ func main() {
 	default:
 		logger = logger.Level(zerolog.InfoLevel)
 	}
-	
+
 	if err := opts.Validate(); err != nil {
 		log.Fatal().Err(err).Msg("invalid options, exiting")
 	}
-	
+
 	log.Debug().Interface("config", opts).Msg("processed configuration")
 
 	router := Router{
