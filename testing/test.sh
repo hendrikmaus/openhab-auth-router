@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-trap "echo ### TESTS FAILED ###" ERR
-
 [[ ! -f "wait-for-it" ]] && \
   echo "downloading wait-for-it" && \
   wget -O wait-for-it https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh && \
@@ -75,3 +73,5 @@ curl -sL --fail --show-error -u demo:demo "http://localhost/basicui/app?sitemap=
 
 # cleanup
 rm openhab-auth-router
+
+echo "SUCCESS"

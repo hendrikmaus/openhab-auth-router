@@ -11,12 +11,11 @@ import (
 	"testing"
 )
 
-func TestLivenessHandler(t *testing.T) {
-	// silence logs for all test cases
+func init() {
 	zerolog.SetGlobalLevel(zerolog.Disabled)
+}
 
-	// ---
-
+func TestLivenessHandler(t *testing.T) {
 	req, err := http.NewRequest("GET", "/liveness", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -88,7 +87,7 @@ func TestMissingHeaderInNonPassthroughModeFails(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
-	assert.Equal(t, "The header 'X-Forwarded-Username' is either not set or empty",
+	assert.Equal(t, "the header 'X-Forwarded-Username' is either not set or empty",
 		rr.Body.String())
 }
 
@@ -132,355 +131,289 @@ func TestUnknownUserIsBlocked(t *testing.T) {
 	assert.Equal(t, http.StatusForbidden, rr.Code)
 }
 
-func TestUserIsRedirectedToDefaultEntrypoint(t *testing.T) {
-	req, err := http.NewRequest("GET", "/", nil)
-	if err != nil {
-		t.Fatal(err)
+func Test_ruleDirector(t *testing.T) {
+	type args struct {
+		req  *http.Request
+		conf *config.Main
 	}
-	req.Header.Add("X-Forwarded-Username", "test")
-
-	user := config.User{Entrypoint: "/start/index"}
-	conf := config.Main{
-		Passthrough: false,
-		Users: map[string]*config.User{
-			"test": &user,
-		},
-	}
-
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mainHandler(w, r, &conf, nil)
-	})
-	handler.ServeHTTP(rr, req)
-
-	loc, _ := rr.Result().Location()
-	assert.Equal(t, "/start/index", loc.RequestURI())
-}
-
-func TestUserIsRedirectedToDefaultEntrypointOnDisallowedPath(t *testing.T) {
-	req, err := http.NewRequest("GET", "/start/index", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	req.Header.Add("X-Forwarded-Username", "test")
-
-	conf := config.Main{
-		Passthrough: false,
-		Users: map[string]*config.User{
-			"test": {
-				Entrypoint: "/default/entrypoint",
-				Paths: map[string]*config.Path{
-					"/start/index": {Allowed: false},
+	tests := []struct {
+		name string
+		args args
+		expectedRequestURI string
+	}{
+		{
+			name: "user is forced to entrypoint",
+			args: args{
+				req: makeGETRequest("/", "test"),
+				conf: &config.Main{
+					Passthrough: false,
+					Users:       map[string]*config.User{
+						"test": {Entrypoint: "/start/index"},
+					},
 				},
 			},
+			expectedRequestURI: "/start/index",
 		},
-	}
-
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mainHandler(w, r, &conf, nil)
-	})
-	handler.ServeHTTP(rr, req)
-
-	loc, _ := rr.Result().Location()
-	assert.Equal(t, "/default/entrypoint", loc.RequestURI())
-}
-
-func TestUserIsRedirectedToDefaultSitemapWhenNoSitemapIsGiven(t *testing.T) {
-	req, err := http.NewRequest("GET", "/basicui/app", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	req.Header.Add("X-Forwarded-Username", "test")
-
-	conf := config.Main{
-		Passthrough: false,
-		Users: map[string]*config.User{
-			"test": {
-				Sitemaps: config.Sitemap{
-					Default: "test_sitemap",
+		{
+			name: "user is forced to entrypoint with empty request uri",
+			args: args{
+				req: makeGETRequest("", "test"),
+				conf: &config.Main{
+					Passthrough: false,
+					Users:       map[string]*config.User{
+						"test": {Entrypoint: "/start/index"},
+					},
 				},
 			},
+			expectedRequestURI: "/start/index",
 		},
-	}
-
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mainHandler(w, r, &conf, nil)
-	})
-	handler.ServeHTTP(rr, req)
-
-	loc, _ := rr.Result().Location()
-	assert.Equal(t, "/basicui/app?sitemap=test_sitemap", loc.RequestURI())
-}
-
-func TestUserIsRedirectedToDefaultSitemapWhenAccessIsDenied(t *testing.T) {
-	req, err := http.NewRequest("GET", "/basicui/app", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	req.Header.Add("X-Forwarded-Username", "test")
-	q := req.URL.Query()
-	q.Set("sitemap", "admin")
-	req.URL.RawQuery = q.Encode()
-
-	conf := config.Main{
-		Passthrough: false,
-		Users: map[string]*config.User{
-			"test": {
-				Sitemaps: config.Sitemap{
-					Default: "test_sitemap",
+		{
+			name: "user is forced to entrypoint when trying to access disallowed path",
+			args: args{
+				req: makeGETRequest("/forbidden/path", "test"),
+				conf: &config.Main{
+					Passthrough: false,
+					Users:       map[string]*config.User{
+						"test": {
+							Entrypoint: "/start/index",
+							Paths:      map[string]*config.Path{
+								"/forbidden/path": {
+									Allowed: false,
+								},
+							},
+						},
+					},
 				},
 			},
+			expectedRequestURI: "/start/index",
 		},
-	}
-
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mainHandler(w, r, &conf, nil)
-	})
-	handler.ServeHTTP(rr, req)
-
-	loc, _ := rr.Result().Location()
-	assert.Equal(t, "/basicui/app?sitemap=test_sitemap", loc.RequestURI())
-}
-
-func TestSitemapAccessWildcard(t *testing.T) {
-	req, err := http.NewRequest("GET", "/basicui/app", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	req.Header.Add("X-Forwarded-Username", "test")
-	q := req.URL.Query()
-	q.Set("sitemap", "admin")
-	req.URL.RawQuery = q.Encode()
-
-	conf := config.Main{
-		Passthrough: false,
-		Users: map[string]*config.User{
-			"test": {
-				Sitemaps: config.Sitemap{
-					Default: "test_sitemap",
-					Allowed: []string{"*"},
+		{
+			name: "basicui - user is redirected to default sitemap when none is requested",
+			args: args{
+				req: makeGETRequest("/basicui/app", "test"),
+				conf: &config.Main{
+					Passthrough: false,
+					Users:       map[string]*config.User{
+						"test": {
+							Entrypoint: "/start/index",
+							Sitemaps: config.Sitemap{
+								Default: "defaultSitemap",
+								Allowed: nil,
+							},
+							Paths: map[string]*config.Path{
+								"/forbidden/path": {
+									Allowed: false,
+								},
+							},
+						},
+					},
 				},
 			},
+			expectedRequestURI: "/basicui/app?sitemap=defaultSitemap",
 		},
-	}
-
-	remoteServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/basicui/app?sitemap=admin", r.URL.RequestURI())
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer remoteServer.Close()
-	remote, _ := url.Parse(remoteServer.URL)
-	proxy := httputil.NewSingleHostReverseProxy(remote)
-
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mainHandler(w, r, &conf, proxy)
-	})
-	handler.ServeHTTP(rr, req)
-}
-
-func TestSitemapAccessToAllowedSitemaps(t *testing.T) {
-	req, err := http.NewRequest("GET", "/basicui/app", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	req.Header.Add("X-Forwarded-Username", "test")
-	q := req.URL.Query()
-	q.Set("sitemap", "admin")
-	req.URL.RawQuery = q.Encode()
-
-	conf := config.Main{
-		Passthrough: false,
-		Users: map[string]*config.User{
-			"test": {
-				Sitemaps: config.Sitemap{
-					Default: "test_sitemap",
-					Allowed: []string{"admin", "default"},
+		{
+			name: "basicui - user is redirected to default sitemap when a forbidden sitemap is requested",
+			args: args{
+				req: makeGETRequest("/basicui/app?sitemap=forbiddenSitemap", "test"),
+				conf: &config.Main{
+					Passthrough: false,
+					Users:       map[string]*config.User{
+						"test": {
+							Entrypoint: "/start/index",
+							Sitemaps: config.Sitemap{
+								Default: "defaultSitemap",
+								Allowed: nil,
+							},
+							Paths: map[string]*config.Path{
+								"/forbidden/path": {
+									Allowed: false,
+								},
+							},
+						},
+					},
 				},
 			},
+			expectedRequestURI: "/basicui/app?sitemap=defaultSitemap",
 		},
-	}
-
-	remoteServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/basicui/app?sitemap=admin", r.URL.RequestURI())
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer remoteServer.Close()
-	remote, _ := url.Parse(remoteServer.URL)
-	proxy := httputil.NewSingleHostReverseProxy(remote)
-
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mainHandler(w, r, &conf, proxy)
-	})
-	handler.ServeHTTP(rr, req)
-}
-
-func TestRestEvents(t *testing.T) {
-	req, err := http.NewRequest("GET", "/rest/sitemaps/events", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	req.Header.Add("X-Forwarded-Username", "test")
-
-	conf := config.Main{
-		Passthrough: false,
-		Users: map[string]*config.User{
-			"test": {
-				Sitemaps: config.Sitemap{
-					Default: "test_sitemap",
-					Allowed: []string{"admin", "default"},
+		{
+			name: "basicui - user may access whitelisted sitemaps",
+			args: args{
+				req: makeGETRequest("/basicui/app?sitemap=allowedSitemap", "test"),
+				conf: &config.Main{
+					Passthrough: false,
+					Users:       map[string]*config.User{
+						"test": {
+							Entrypoint: "/start/index",
+							Sitemaps: config.Sitemap{
+								Default: "defaultSitemap",
+								Allowed: []string{"allowedSitemap"},
+							},
+							Paths: map[string]*config.Path{
+								"/forbidden/path": {
+									Allowed: false,
+								},
+							},
+						},
+					},
 				},
 			},
+			expectedRequestURI: "/basicui/app?sitemap=allowedSitemap",
 		},
-	}
-
-	remoteServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/rest/sitemaps/events", r.URL.RequestURI())
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer remoteServer.Close()
-	remote, _ := url.Parse(remoteServer.URL)
-	proxy := httputil.NewSingleHostReverseProxy(remote)
-
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mainHandler(w, r, &conf, proxy)
-	})
-	handler.ServeHTTP(rr, req)
-}
-
-func TestRestDefaultSitemapRedirect(t *testing.T) {
-	req, err := http.NewRequest("GET", "/rest/sitemaps/_default", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	req.Header.Add("X-Forwarded-Username", "test")
-
-	conf := config.Main{
-		Passthrough: false,
-		Users: map[string]*config.User{
-			"test": {
-				Sitemaps: config.Sitemap{
-					Default: "test_sitemap",
-					Allowed: []string{"admin", "default"},
+		{
+			name: "basicui - user may access all sitemaps when the wildcard is set",
+			args: args{
+				req: makeGETRequest("/basicui/app?sitemap=allowedSitemap", "test"),
+				conf: &config.Main{
+					Passthrough: false,
+					Users:       map[string]*config.User{
+						"test": {
+							Entrypoint: "/start/index",
+							Sitemaps: config.Sitemap{
+								Default: "defaultSitemap",
+								Allowed: []string{"*"},
+							},
+							Paths: map[string]*config.Path{
+								"/forbidden/path": {
+									Allowed: false,
+								},
+							},
+						},
+					},
 				},
 			},
+			expectedRequestURI: "/basicui/app?sitemap=allowedSitemap",
 		},
-	}
-
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mainHandler(w, r, &conf, nil)
-	})
-	handler.ServeHTTP(rr, req)
-
-	loc, _ := rr.Result().Location()
-	assert.Equal(t, "/rest/sitemaps/test_sitemap", loc.RequestURI())
-}
-
-func TestRestUserIsRedirectedToDefaultSitemapWhenDisallowed(t *testing.T) {
-	req, err := http.NewRequest("GET", "/rest/sitemaps/admin", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	req.Header.Add("X-Forwarded-Username", "test")
-
-	conf := config.Main{
-		Passthrough: false,
-		Users: map[string]*config.User{
-			"test": {
-				Sitemaps: config.Sitemap{
-					Default: "test_sitemap",
-					Allowed: []string{"default"},
+		{
+			name: "rest - user may access events",
+			args: args{
+				req: makeGETRequest("/rest/sitemap/events", "test"),
+				conf: &config.Main{
+					Passthrough: false,
+					Users:       map[string]*config.User{
+						"test": {
+							Entrypoint: "/start/index",
+							Sitemaps: config.Sitemap{
+								Default: "defaultSitemap",
+								Allowed: []string{"*"},
+							},
+							Paths: map[string]*config.Path{
+								"/forbidden/path": {
+									Allowed: false,
+								},
+							},
+						},
+					},
 				},
 			},
+			expectedRequestURI: "/rest/sitemap/events",
 		},
-	}
-
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mainHandler(w, r, &conf, nil)
-	})
-	handler.ServeHTTP(rr, req)
-
-	loc, _ := rr.Result().Location()
-	assert.Equal(t, "/rest/sitemaps/test_sitemap", loc.RequestURI())
-}
-
-func TestRestSitemapAccessWildcard(t *testing.T) {
-	req, err := http.NewRequest("GET", "/rest/sitemaps/admin", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	req.Header.Add("X-Forwarded-Username", "test")
-	q := req.URL.Query()
-	q.Set("sitemap", "admin")
-	req.URL.RawQuery = q.Encode()
-
-	conf := config.Main{
-		Passthrough: false,
-		Users: map[string]*config.User{
-			"test": {
-				Sitemaps: config.Sitemap{
-					Default: "test_sitemap",
-					Allowed: []string{"*"},
+		{
+			name: "rest - user is redirected to default sitemap when it is requested explicitly",
+			args: args{
+				req: makeGETRequest("/rest/sitemaps/_default", "test"),
+				conf: &config.Main{
+					Passthrough: false,
+					Users:       map[string]*config.User{
+						"test": {
+							Entrypoint: "/start/index",
+							Sitemaps: config.Sitemap{
+								Default: "defaultSitemap",
+								Allowed: []string{"*"},
+							},
+							Paths: map[string]*config.Path{
+								"/forbidden/path": {
+									Allowed: false,
+								},
+							},
+						},
+					},
 				},
 			},
+			expectedRequestURI: "/rest/sitemaps/defaultSitemap",
 		},
-	}
-
-	remoteServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/rest/sitemaps/admin?sitemap=admin", r.URL.RequestURI())
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer remoteServer.Close()
-	remote, _ := url.Parse(remoteServer.URL)
-	proxy := httputil.NewSingleHostReverseProxy(remote)
-
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mainHandler(w, r, &conf, proxy)
-	})
-	handler.ServeHTTP(rr, req)
-}
-
-func TestRestSitemapAccessToAllowedSitemaps(t *testing.T) {
-	req, err := http.NewRequest("GET", "/rest/sitemaps/admin", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	req.Header.Add("X-Forwarded-Username", "test")
-	q := req.URL.Query()
-	q.Set("sitemap", "admin")
-	req.URL.RawQuery = q.Encode()
-
-	conf := config.Main{
-		Passthrough: false,
-		Users: map[string]*config.User{
-			"test": {
-				Sitemaps: config.Sitemap{
-					Default: "test_sitemap",
-					Allowed: []string{"admin", "default"},
+		{
+			name: "rest - user is redirected to default sitemap when requested sitemap is not allowed",
+			args: args{
+				req: makeGETRequest("/rest/sitemaps/forbiddenSitemap", "test"),
+				conf: &config.Main{
+					Passthrough: false,
+					Users:       map[string]*config.User{
+						"test": {
+							Entrypoint: "/start/index",
+							Sitemaps: config.Sitemap{
+								Default: "defaultSitemap",
+								Allowed: []string{},
+							},
+							Paths: map[string]*config.Path{
+								"/forbidden/path": {
+									Allowed: false,
+								},
+							},
+						},
+					},
 				},
 			},
+			expectedRequestURI: "/rest/sitemaps/defaultSitemap",
+		},
+		{
+			name: "rest - user may access allowed sitemaps",
+			args: args{
+				req: makeGETRequest("/rest/sitemaps/allowedSitemap", "test"),
+				conf: &config.Main{
+					Passthrough: false,
+					Users:       map[string]*config.User{
+						"test": {
+							Entrypoint: "/start/index",
+							Sitemaps: config.Sitemap{
+								Default: "defaultSitemap",
+								Allowed: []string{"allowedSitemap"},
+							},
+							Paths: map[string]*config.Path{
+								"/forbidden/path": {
+									Allowed: false,
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedRequestURI: "/rest/sitemaps/allowedSitemap",
+		},
+		{
+			name: "rest - user may access all sitemaps when a wildcard is set",
+			args: args{
+				req: makeGETRequest("/rest/sitemaps/allowedSitemap", "test"),
+				conf: &config.Main{
+					Passthrough: false,
+					Users:       map[string]*config.User{
+						"test": {
+							Entrypoint: "/start/index",
+							Sitemaps: config.Sitemap{
+								Default: "defaultSitemap",
+								Allowed: []string{"*"},
+							},
+							Paths: map[string]*config.Path{
+								"/forbidden/path": {
+									Allowed: false,
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedRequestURI: "/rest/sitemaps/allowedSitemap",
 		},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ruleDirector(tt.args.req, tt.args.conf)
+			assert.Equal(t, tt.expectedRequestURI, tt.args.req.URL.RequestURI())
+		})
+	}
+}
 
-	remoteServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/rest/sitemaps/admin?sitemap=admin", r.URL.RequestURI())
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer remoteServer.Close()
-	remote, _ := url.Parse(remoteServer.URL)
-	proxy := httputil.NewSingleHostReverseProxy(remote)
-
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mainHandler(w, r, &conf, proxy)
-	})
-	handler.ServeHTTP(rr, req)
+func makeGETRequest(uri string, user string) *http.Request {
+	r, _ := http.NewRequest("GET", uri, nil)
+	r.Header.Add("X-Forwarded-Username", user)
+	return r
 }
