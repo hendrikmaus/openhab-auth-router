@@ -37,17 +37,17 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
-dockers:
-  - goos: linux
-    goarch: amd64
-    builds:
-      - default
-    binaries:
-      - openhab-auth-router
-    image_templates:
-      - hendrikmaus/openhab-auth-router:{{ .Tag }}
-      - hendrikmaus/openhab-auth-router:latest
-    dockerfile: Dockerfile
+#dockers:
+#  - goos: linux
+#    goarch: amd64
+#    builds:
+#      - default
+#    binaries:
+#      - openhab-auth-router
+#    image_templates:
+#      - hendrikmaus/openhab-auth-router:{{ .Tag }}
+#      - hendrikmaus/openhab-auth-router:latest
+#    dockerfile: Dockerfile
 # Maybe these will work some day or https://github.com/goreleaser/goreleaser/issues/530 gets done
 #  - goos: linux
 #    goarch: arm
