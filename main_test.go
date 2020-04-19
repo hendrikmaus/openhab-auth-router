@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/hendrikmaus/openhab-auth-router/config"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -11,13 +12,19 @@ import (
 )
 
 func TestLivenessHandler(t *testing.T) {
+	// silence logs for all test cases
+	zerolog.SetGlobalLevel(zerolog.Disabled)
+
+	// ---
+
 	req, err := http.NewRequest("GET", "/liveness", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	router := Router{}
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(livenessProbeHandler)
+	handler := http.HandlerFunc(router.LivenessProbeHandler)
 	handler.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code)
@@ -35,9 +42,10 @@ func TestReadinessHandlerFailsConnectingToRemote(t *testing.T) {
 	defer remoteServer.Close()
 	remote, _ := url.Parse(remoteServer.URL)
 
+	router := Router{}
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		readinessProbeHandler(w, r, remote)
+		router.ReadinessProbeHandler(w, r, remote)
 	})
 	handler.ServeHTTP(rr, req)
 
@@ -56,9 +64,10 @@ func TestReadinessHandler(t *testing.T) {
 	defer remoteServer.Close()
 	remote, _ := url.Parse(remoteServer.URL)
 
+	router := Router{}
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		readinessProbeHandler(w, r, remote)
+		router.ReadinessProbeHandler(w, r, remote)
 	})
 	handler.ServeHTTP(rr, req)
 
