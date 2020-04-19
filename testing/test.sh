@@ -1,20 +1,23 @@
 #!/usr/bin/env bash
-set -eu -o pipefail
-set -x
+set -Eeuo pipefail
 
-if [ ! -f "wait-for-it" ]; then
-  wget -O wait-for-it https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh
+trap "echo ### TESTS FAILED ###" ERR
+
+[[ ! -f "wait-for-it" ]] && \
+  echo "downloading wait-for-it" && \
+  wget -O wait-for-it https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh && \
   chmod +x wait-for-it
-fi
 
 # step 0 - run go build + fix permissions
+echo "building openhab-auth-router"
 docker run --rm \
   -v "$(pwd)/../":/go/src/github.com/hendrikmaus/openhab-auth-router \
   -w /go/src/github.com/hendrikmaus/openhab-auth-router \
   golang:1.13.8-buster \
   go build -o openhab-auth-router -mod=vendor /go/src/github.com/hendrikmaus/openhab-auth-router/main.go
 
-mv ../openhab-auth-router .
+echo "setting permissions"
+mv ../openhab-auth-router . && \
 docker run --rm \
   -v "$(pwd)":/workspace \
   -w /workspace \
@@ -22,44 +25,53 @@ docker run --rm \
   chown "$(id -u)":"$(id -g)" openhab-auth-router
 
 # step 1 - bootstrapping an openHAB container and wait for it to be up
-docker-compose up -d
-trap "docker-compose down" EXIT
+echo "starting the test stack"
+docker-compose up -d && trap "docker-compose down" EXIT
 
-# wait for openhab itself to listen on port 8080
-./wait-for-it localhost:8080 -- echo "openHAB container is up"
+./wait-for-it localhost:8080 -- echo "openHAB container is up" && \
+  ./wait-for-it localhost:80 -- echo "nginx container is up" && \
+  ./wait-for-it localhost:9090 -- echo "openhab-auth-router container is up" && \
+  echo "all containers running and listening"
 
-# wait for nginx to listen on port 80
-./wait-for-it localhost:80 -- echo "nginx container is up"
-
-# wait for openhab-auth-router to listen on port 9090
-./wait-for-it localhost:9090 -- echo "openhab-auth-router container is up"
-sleep 30
-curl -sL "http://localhost:8080/" | grep "Initial Setup"
+printf "waiting for openHAB to start "
+until curl -sL "http://localhost:8080/" | grep "Initial Setup" > /dev/null; do
+  printf '.'
+  sleep 2
+done
+echo " success"
 
 # step 2 - trigger demo mode setup and wait for completion
-curl -sL "http://localhost:8080/start/index?type=demo"
-sleep 60
-curl -sL "http://localhost:8080/basicui/app" | grep "Demo"
+printf "setup Demo mode in openHAB" && \
+  curl -sL "http://localhost:8080/start/index?type=demo" > /dev/null && \
+  echo " - success"
+
+printf "wait for openHAB to setup "
+until curl -sL "http://localhost:8080/basicui/app" | grep "Demo" > /dev/null; do
+  printf '.'
+  sleep 2
+done
+echo " success"
 
 # step 3 - run test cases
+echo "run test cases:"
 
-# admin can see ui selection on /start/index
-curl -sL -u admin:admin "http://localhost:80/start/index" | grep "Welcome to openHAB"
+echo "1. admin can see ui selection on /start/index"
+curl -sL --fail --show-error -u admin:admin "http://localhost/start/index" | grep "Welcome to openHAB" > /dev/null
 
-# admin can see sitemap "admin"
-curl -sL -u admin:admin "http://localhost/basicui/app?sitemap=admin" | grep "Admin"
+echo "2. admin can see sitemap 'admin'"
+curl -sL --fail --show-error -u admin:admin "http://localhost/basicui/app?sitemap=admin" | grep "Admin" > /dev/null
 
-# demo can not see ui selection on /start/index > redirects to /basicui/app?sitemap=demo
-curl -sL -u demo:demo "http://localhost/start/index" | grep "Demo"
+echo "3. demo can not see ui selection on /start/index > redirects to /basicui/app?sitemap=demo"
+curl -sL --fail --show-error -u demo:demo "http://localhost/start/index" | grep "Demo"> /dev/null
 
-# demo user can not see admin sitemap > redirects to demo sitemap
-curl -sL -u demo:demo "http://localhost/basicui/app?sitemap=admin" | grep "Demo"
+echo "4. demo user can not see admin sitemap > redirects to demo sitemap"
+curl -sL --fail --show-error -u demo:demo "http://localhost/basicui/app?sitemap=admin" | grep "Demo" > /dev/null
 
-# demo user can see demo sitemap
-curl -sL -u demo:demo "http://localhost/basicui/app?sitemap=demo" | grep "Demo"
+echo "5. demo user can see demo sitemap"
+curl -sL --fail --show-error -u demo:demo "http://localhost/basicui/app?sitemap=demo" | grep "Demo"> /dev/null
 
-# demo user can see widgetoverview sitemap
-curl -sL -u demo:demo "http://localhost/basicui/app?sitemap=widgetoverview" | grep "Widget Overview"
+echo "6. demo user can see widgetoverview sitemap"
+curl -sL --fail --show-error -u demo:demo "http://localhost/basicui/app?sitemap=widgetoverview" | grep "Widget Overview" > /dev/null
 
 # cleanup
 rm openhab-auth-router
